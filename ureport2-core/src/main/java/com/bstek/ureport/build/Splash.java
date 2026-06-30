@@ -23,24 +23,27 @@ public class Splash {
 	public void doPrint(){
 		StringBuilder sb=new StringBuilder();
 		sb.append("\n");
-		sb.append("_____  __________ __________________ _______ ________ ______________ ");
+		sb.append("  _  ___           _       _     _____  ");
 		sb.append("\n");
-		sb.append("__   / / /___  __ \\___  ____/___  __ \\__  __ \\___  __ \\___  __/__|__ \\");
+		sb.append(" | |/ (_)         (_)     | |   |_   _| ");
 		sb.append("\n");
-		sb.append("_  / / / __  /_/ /__  __/   __  /_/ /_  / / /__  /_/ /__  /   ____/ /");
+		sb.append(" | ' / _ _ __   __ _ _ __ | |_    | |   ");
 		sb.append("\n");
-		sb.append("/ /_/ /  _  _, _/ _  /___   _  ____/ / /_/ / _  _, _/ _  /    _  __/ ");
+		sb.append(" |  < | | '_ \\ / _` | '_ \\| __|   | |   ");
 		sb.append("\n");
-		sb.append("\\____/   /_/ |_|  /_____/   /_/      \\____/  /_/ |_|  /_/     /____/ ");
+		sb.append(" | . \\| | | | | (_| | | | | |_    | |   ");
 		sb.append("\n");
-		sb.append("........................................................................................................");
+		sb.append(" |_|\\_\\_|_| |_|\\__, |_| |_|\\__|   |_|   ");
 		sb.append("\n");
-		sb.append(".  uReport, is a Chinese style report engine");
-		sb.append(" licensed under the Apache License 2.0,                    .");
+		sb.append("                __/ |                    ");
 		sb.append("\n");
-		sb.append(".  which is opensource, easy to use,high-performance, with browser-based-designer.                     .");
+		sb.append("               |___/                     ");
 		sb.append("\n");
-		sb.append("........................................................................................................");
+		sb.append("================================================");
+		sb.append("\n");
+		sb.append("    KinginT 报表模板系统");
+		sb.append("\n");
+		sb.append("================================================");
 		sb.append("\n");
 		System.out.println(sb.toString());
 	}
