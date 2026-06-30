@@ -38,8 +38,13 @@
     .report-page-sheet th, .report-page-sheet td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; box-sizing:border-box; }
     .report-page-sheet tr { page-break-inside:avoid; break-inside:avoid; }
 
-    /* 工具栏 */
-    .report-toolbar { width:100%; margin:0 0 10px 0; padding:6px 16px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.08); box-sizing:border-box; display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+    /* 工具栏 — 固定在顶部 */
+    .report-toolbar {
+        width:100%; margin:0; padding:6px 16px; background:#fff;
+        box-shadow:0 1px 4px rgba(0,0,0,0.08); box-sizing:border-box;
+        display:flex; align-items:center; gap:4px; flex-wrap:wrap;
+        position:sticky; top:0; z-index:1000;
+    }
     .report-toolbar .btn { display:inline-flex!important; padding:4px 8px!important; background:transparent!important; border:none!important; align-items:center; gap:2px; }
     .report-toolbar .btn img { width:18px; height:18px; }
     .report-toolbar .btn-group .btn { color:#337ab7; background:transparent!important; border:none!important; }
