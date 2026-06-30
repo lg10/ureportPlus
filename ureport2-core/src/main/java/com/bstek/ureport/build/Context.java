@@ -324,6 +324,10 @@ public class Context {
 		variableMap.clear();
 	}
 	public Object getVariable(String key){
-		return variableMap.get(key);
+		Object val=variableMap.get(key);
+		if(val==null && parameters!=null){
+			val=parameters.get(key);
+		}
+		return val;
 	}
 }

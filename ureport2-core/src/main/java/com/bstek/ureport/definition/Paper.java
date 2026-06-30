@@ -39,6 +39,9 @@ public class Paper implements Serializable{
 	private int columnCount=2;
 	private int columnMargin=5;
 	private int htmlIntervalRefreshValue=0;
+	private boolean showPageNumber=false;
+	private String pageNumPos="footer";
+	private String pageNumAlign="center";
 	public int getLeftMargin() {
 		return leftMargin;
 	}
@@ -157,5 +160,29 @@ public class Paper implements Serializable{
 
 	public void setHtmlIntervalRefreshValue(int htmlIntervalRefreshValue) {
 		this.htmlIntervalRefreshValue = htmlIntervalRefreshValue;
+	}
+
+	public boolean isShowPageNumber() {
+		return showPageNumber;
+	}
+
+	public void setShowPageNumber(boolean showPageNumber) {
+		this.showPageNumber = showPageNumber;
+	}
+
+	public String getPageNumPos() {
+		return pageNumPos;
+	}
+
+	public void setPageNumPos(String pageNumPos) {
+		this.pageNumPos = pageNumPos;
+	}
+
+	public String getPageNumAlign() {
+		return pageNumAlign;
+	}
+
+	public void setPageNumAlign(String pageNumAlign) {
+		this.pageNumAlign = pageNumAlign;
 	}
 }

@@ -64,8 +64,7 @@ public class UReportServlet extends HttpServlet {
 		String uri = req.getRequestURI();
 		String targetUrl = uri.substring(path.length());
 		if (targetUrl.length() < 1) {
-			outContent(resp, "Welcome to use ureport,please specify target url.");
-			return;
+			targetUrl = "/";
 		}
 		int slashPos = targetUrl.indexOf("/", 1);
 		if (slashPos > -1) {
@@ -80,17 +79,23 @@ public class UReportServlet extends HttpServlet {
 		try{
 			targetHandler.execute(req, resp);
 		}catch(Exception ex){
-			resp.setCharacterEncoding("UTF-8");
-			PrintWriter pw=resp.getWriter();
 			Throwable e=buildRootException(ex);
-			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 			String errorMsg = e.getMessage();
 			if(StringUtils.isBlank(errorMsg)){
 				errorMsg=e.getClass().getName();
 			}
-			pw.write(errorMsg);
-			pw.close();				
-			throw new ServletException(ex);	
+			if(!resp.isCommitted()){
+				try{
+					resp.reset();
+					resp.setCharacterEncoding("UTF-8");
+					resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+					PrintWriter pw=resp.getWriter();
+					pw.write(errorMsg);
+					pw.close();
+				}catch(IllegalStateException ignored){
+				}
+			}
+			ex.printStackTrace();
 		}finally{
 			RequestHolder.clean();
 		}

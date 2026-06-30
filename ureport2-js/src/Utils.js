@@ -474,7 +474,7 @@ export function tableToXml(context){
             for(let dataset of datasource.datasets){
                 ds+=`<dataset name="${encode(dataset.name)}" type="sql">`;
                 ds+=`<sql><![CDATA[${dataset.sql}]]></sql>`;
-                for(let field of dataset.fields){
+                for(let field of (dataset.fields || [])){
                     ds+=`<field name="${field.name}"/>`;
                 }
                 for(let parameter of dataset.parameters){
@@ -486,7 +486,7 @@ export function tableToXml(context){
             ds+=` bean="${datasource.beanId}">`;
             for(let dataset of datasource.datasets){
                 ds+=`<dataset name="${encode(dataset.name)}" type="bean" method="${dataset.method}" clazz="${dataset.clazz}">`;
-                for(let field of dataset.fields){
+                for(let field of (dataset.fields || [])){
                     ds+=`<field name="${field.name}"/>`;
                 }
                 ds+=`</dataset>`;
@@ -496,7 +496,7 @@ export function tableToXml(context){
             for(let dataset of datasource.datasets){
                 ds+=`<dataset name="${encode(dataset.name)}" type="sql">`;
                 ds+=`<sql><![CDATA[${dataset.sql}]]></sql>`;
-                for(let field of dataset.fields){
+                for(let field of (dataset.fields || [])){
                     ds+=`<field name="${field.name}"/>`;
                 }
                 for(let parameter of dataset.parameters){
@@ -683,8 +683,8 @@ export function mmToPoint(mm){
     return Math.round(value);
 };
 export function pointToMM(point){
-    let value=point*0.352778;
-    return Math.round(value);
+    // 与Java Math.round(pt * 100f / 283f) 完全一致
+    return Math.round(point * 100 / 283);
 };
 
 export function pointToPixel(point){

@@ -446,6 +446,45 @@ export default class SettingsDialog{
             _this.paper.pagingMode='fixrows';
             setDirty();
         });
+
+        // 页码显示配置
+        const pageNumGroup=$(`<div class="form-group" style="margin-top: 20px;border-top: 1px solid #eee;padding-top: 15px"><label>${window.i18n.dialog.setting.pageNumber}</label></div>`);
+        pagingTab.append(pageNumGroup);
+        this.showPageNum=$(`<label class="checkbox-inline" style="padding-left: 5px;font-weight: normal">
+            <input type="checkbox"> ${window.i18n.dialog.setting.showPageNumber}
+        </label>`);
+        pageNumGroup.append(this.showPageNum);
+        this.showPageNum.children('input').change(function(){
+            const checked=$(this).prop('checked');
+            _this.pageNumPosSelect.prop('disabled',!checked);
+            _this.paper.showPageNumber=checked;
+            setDirty();
+        });
+
+        const posGroup=$(`<span style="margin-left:20px"><span>${window.i18n.dialog.setting.pageNumPos}</span></span>`);
+        pageNumGroup.append(posGroup);
+        this.pageNumPosSelect=$(`<select class="form-control" style="display:inline-block;width:100px;margin-left:5px" disabled>
+            <option value="header">${window.i18n.dialog.setting.header}</option>
+            <option value="footer">${window.i18n.dialog.setting.footer}</option>
+        </select>`);
+        posGroup.append(this.pageNumPosSelect);
+        this.pageNumPosSelect.change(function(){
+            _this.paper.pageNumPos=$(this).val();
+            setDirty();
+        });
+
+        const alignGroup=$(`<span style="margin-left:20px"><span>${window.i18n.dialog.setting.hfdesc}</span></span>`);
+        pageNumGroup.append(alignGroup);
+        this.pageNumAlignSelect=$(`<select class="form-control" style="display:inline-block;width:80px;margin-left:5px" disabled>
+            <option value="center">${window.i18n.dialog.setting.center}</option>
+            <option value="left">${window.i18n.dialog.setting.left}</option>
+            <option value="right">${window.i18n.dialog.setting.right}</option>
+        </select>`);
+        alignGroup.append(this.pageNumAlignSelect);
+        this.pageNumAlignSelect.change(function(){
+            _this.paper.pageNumAlign=$(this).val();
+            setDirty();
+        });
     }
     initColumnSetting(columnTab){
         columnTab.append(`<div style="margin-top: 12px;color:#999999;font-size: 12px">${window.i18n.dialog.setting.colDesc}</div>`);
@@ -568,6 +607,17 @@ export default class SettingsDialog{
             this.fixNum.children('input').prop('checked',true);
             this.rowNumberEditor.val(this.paper.fixRows);
         }
+
+        // 页码配置
+        if(this.paper.showPageNumber){
+            this.showPageNum.children('input').prop('checked',true);
+            this.pageNumPosSelect.prop('disabled',false);
+            this.pageNumAlignSelect.prop('disabled',false);
+        }else{
+            this.showPageNum.children('input').prop('checked',false);
+        }
+        this.pageNumPosSelect.val(this.paper.pageNumPos || 'footer');
+        this.pageNumAlignSelect.val(this.paper.pageNumAlign || 'center');
     }
 }
 function checkGrammar(text,callback){

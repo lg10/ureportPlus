@@ -60,6 +60,7 @@ public class ExportManagerImpl implements ExportManager {
 		htmlReport.setReportAlign(report.getPaper().getHtmlReportAlign().name());
 		htmlReport.setChartDatas(report.getContext().getChartDataMap().values());
 		htmlReport.setHtmlIntervalRefreshValue(report.getPaper().getHtmlIntervalRefreshValue());
+		applyPaperSettings(report, htmlReport);
 		return htmlReport;
 	}
 	
@@ -91,9 +92,29 @@ public class ExportManagerImpl implements ExportManager {
 		htmlReport.setReportAlign(report.getPaper().getHtmlReportAlign().name());
 		htmlReport.setChartDatas(report.getContext().getChartDataMap().values());
 		htmlReport.setHtmlIntervalRefreshValue(report.getPaper().getHtmlIntervalRefreshValue());
+		applyPaperSettings(report, htmlReport);
 		return htmlReport;
 	}
-	@Override
+	private void applyPaperSettings(Report report, HtmlReport htmlReport) {
+		com.bstek.ureport.definition.Paper paper = report.getPaper();
+		int pw = paper.getWidth();
+		int ph = paper.getHeight();
+		if (pw == 0) pw = 595;
+		if (ph == 0) ph = 842;
+		if (paper.getOrientation() != null && "landscape".equals(paper.getOrientation().name())) {
+			int tmp = pw; pw = ph; ph = tmp;
+		}
+		htmlReport.setPaperWidth(Math.round(pw * 100f / 283f));
+		htmlReport.setPaperHeight(Math.round(ph * 100f / 283f));
+		htmlReport.setPaperMarginLeft(Math.round(paper.getLeftMargin() * 100f / 283f));
+		htmlReport.setPaperMarginRight(Math.round(paper.getRightMargin() * 100f / 283f));
+		htmlReport.setPaperMarginTop(Math.round(paper.getTopMargin() * 100f / 283f));
+		htmlReport.setPaperMarginBottom(Math.round(paper.getBottomMargin() * 100f / 283f));
+		htmlReport.setPaperOrientation(paper.getOrientation() != null ? paper.getOrientation().name() : "portrait");
+		htmlReport.setShowPageNumber(paper.isShowPageNumber());
+		htmlReport.setPageNumPos(paper.getPageNumPos() != null ? paper.getPageNumPos() : "footer");
+		htmlReport.setPageNumAlign(paper.getPageNumAlign() != null ? paper.getPageNumAlign() : "center");
+	}
 	public void exportPdf(ExportConfigure config) {
 		String file=config.getFile();
 		Map<String, Object> parameters=config.getParameters();

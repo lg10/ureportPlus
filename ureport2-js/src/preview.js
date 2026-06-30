@@ -32,33 +32,26 @@ $(document).ready(function(){
     }
     $('.ureport-print').click(function(){
         const urlParameters=buildLocationSearchParameters();
-        const url=window._server+'/preview/loadPrintPages'+urlParameters;
         showLoading();
-        $.ajax({
-            url,
-            type:'POST',
-            success:function(result){
-                $.get(window._server+'/preview/loadPagePaper'+urlParameters,function(paper){
-                    hideLoading();
-                    const html=result.html;
-                    const iFrame=window.frames['_print_frame'];
-                    let styles=`<style type="text/css">`;
-                    styles+=buildPrintStyle(paper);
-                    styles+=$('#_ureport_table_style').html();
-                    styles+=`</style>`;
-                    $(iFrame.document.body).html(styles+html);
-                    iFrame.window.focus();
-                    iFrame.window.print();
-                });
-            },
-            error:function(response){
-                hideLoading();
-                if(response && response.responseText){
-                    alert("服务端错误："+response.responseText+"");
-                }else{
-                    alert("服务端出错！");
-                }
-            }
+        $.get(window._server+'/preview/loadPagePaper'+urlParameters,function(paper){
+            hideLoading();
+            const iFrame=window.frames['_print_frame'];
+            const content=$('#_ureport_table').clone();
+            content.css({margin:0,padding:0,transform:'none',width:'auto'});
+            content.find('.report-page-sheet').css({margin:'0',padding:'0',transform:'none'});
+            let styles='<style type="text/css">';
+            styles+='body{background:#fff!important;margin:0!important;padding:0!important}';
+            styles+='@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}';
+            styles+=buildPrintStyle(paper,{});
+            const cellStyleEl=document.getElementById('_ureport_table_style');
+            if(cellStyleEl) styles+=cellStyleEl.textContent||cellStyleEl.innerHTML||'';
+            styles+='table{table-layout:fixed!important;border-collapse:collapse;margin:0 auto!important;box-sizing:border-box}th,td{box-sizing:border-box}tr{page-break-inside:avoid;break-inside:avoid}';
+            styles+='.report-page-sheet{width:auto!important;min-height:0!important;height:auto!important;box-shadow:none!important;border:none!important;margin:0!important;padding:0!important;page-break-after:always!important;page-break-inside:avoid!important}.report-page-sheet:last-child{page-break-after:auto!important}.report-wrapper{width:100%!important;padding:0!important;margin:0!important}.page-viewport{padding:0!important}';
+            styles+='</style>';
+            iFrame.document.head.innerHTML=styles;
+            iFrame.document.body.innerHTML=content[0].outerHTML;
+            iFrame.window.focus();
+            setTimeout(function(){iFrame.window.print();},300);
         });
     });
     let directPrintPdf=false,index=0;
@@ -157,29 +150,36 @@ window.buildLocationSearchParameters=function(exclude){
     return p;
 };
 
-function buildPrintStyle(paper){
+function buildPrintStyle(paper, hf){
+    // 统一使用mm数值，与屏幕CSS完全同源。横向时交换宽高
+    let pageW=pointToMM(paper.width);
+    let pageH=pointToMM(paper.height);
+    if(paper.orientation==='landscape'){
+        const tmp=pageW; pageW=pageH; pageH=tmp;
+    }
     const marginLeft=pointToMM(paper.leftMargin);
     const marginTop=pointToMM(paper.topMargin);
     const marginRight=pointToMM(paper.rightMargin);
     const marginBottom=pointToMM(paper.bottomMargin);
-    const paperType=paper.paperType;
-    let page=paperType;
-    if(paperType==='CUSTOM'){
-        page=pointToMM(paper.width)+'mm '+pointToMM(paper.height)+'mm';
+    // CSS @page margin boxes: 浏览器原生页眉/页脚，每页自动重复
+    let marginBoxes='';
+    if(hf){
+        const esc=(s)=>s?s.replace(/"/g,'\\"').replace(/\n/g,' '):'';
+        if(hf.headerLeft) marginBoxes+=`@top-left { content: "${esc(hf.headerLeft)}"; font-size:10pt; font-family:宋体; }\n`;
+        if(hf.headerCenter) marginBoxes+=`@top-center { content: "${esc(hf.headerCenter)}"; font-size:10pt; font-family:宋体; }\n`;
+        if(hf.headerRight) marginBoxes+=`@top-right { content: "${esc(hf.headerRight)}"; font-size:10pt; font-family:宋体; }\n`;
+        if(hf.footerLeft) marginBoxes+=`@bottom-left { content: "${esc(hf.footerLeft)}"; font-size:10pt; font-family:宋体; }\n`;
+        if(hf.footerCenter) marginBoxes+=`@bottom-center { content: "${esc(hf.footerCenter)}"; font-size:10pt; font-family:宋体; }\n`;
+        if(hf.footerRight) marginBoxes+=`@bottom-right { content: "${esc(hf.footerRight)}"; font-size:10pt; font-family:宋体; }\n`;
     }
     const style=`
-        @media print {
-            .page-break{
-                display: block;
-                page-break-before: always;
-            }
-        }
         @page {
-          size: ${page} ${paper.orientation};
+          size: ${pageW}mm ${pageH}mm;
           margin-left: ${marginLeft}mm;
           margin-top: ${marginTop}mm;
           margin-right:${marginRight}mm;
           margin-bottom:${marginBottom}mm;
+          ${marginBoxes}
         }
     `;
     return style;

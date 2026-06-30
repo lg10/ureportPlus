@@ -32,9 +32,9 @@ public class FitPagePagination extends BasePagination implements Pagination {
 	@Override
 	public List<Page> doPaging(Report report) {
 		Paper paper=report.getPaper();
-		int height=paper.getHeight()-paper.getBottomMargin()-paper.getTopMargin()-5;
-		if(paper.getOrientation().equals(Orientation.landscape)){
-			height=paper.getWidth()-paper.getBottomMargin()-paper.getTopMargin()-5;
+		int height=paper.getHeight()-paper.getBottomMargin()-paper.getTopMargin()+20;
+		if(paper.getOrientation()!=null && paper.getOrientation().equals(Orientation.landscape)){
+			height=paper.getWidth()-paper.getBottomMargin()-paper.getTopMargin()+20;
 		}
 		List<Row> rows=report.getRows();
 		List<Row> headerRows=report.getHeaderRepeatRows();
@@ -86,7 +86,7 @@ public class FitPagePagination extends BasePagination implements Pagination {
 				}
 				continue;
 			}
-			rowHeight+=rowRealHeight+1;
+			rowHeight+=rowRealHeight;
 			pageRows.add(row);
 			row.setPageIndex(pageIndex);
 			boolean overflow=false;
@@ -100,6 +100,13 @@ public class FitPagePagination extends BasePagination implements Pagination {
 				overflow=true;
 			}
 			if(overflow){
+				// 填满剩余空间：最后一行高度拉伸到纸面底部
+				int remain=height-rowHeight;
+				if(remain>0 && pageRows.size()>0){
+					Row lastRow=pageRows.get(pageRows.size()-1);
+					
+					lastRow.setRealHeight(lastRow.getRealHeight()+remain);
+				}
 				Page newPage=buildPage(pageRows,pageRepeatHeaders,pageRepeatFooters,titleRows,pageIndex,report);
 				pageIndex++;
 				pages.add(newPage);
@@ -114,6 +121,11 @@ public class FitPagePagination extends BasePagination implements Pagination {
 			}
 		}
 		if(pageRows.size()>0){
+			int remain=height-rowHeight;
+			if(remain>0){
+				Row lastRow=pageRows.get(pageRows.size()-1);
+				lastRow.setRealHeight(lastRow.getRealHeight()+remain);
+			}
 			Page newPage=buildPage(pageRows,pageRepeatHeaders,pageRepeatFooters,titleRows,pageIndex,report);
 			pages.add(newPage);
 		}

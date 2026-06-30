@@ -106,7 +106,7 @@ export default class DatabaseTree extends BaseTree{
                     const span=$(options.selector);
                     dialog(`${window.i18n.tree.addField}`,newFiledGroup,function(){
                         const newFieldName=newFieldEditor.val();
-                        for(let field of dataset.fields){
+                        for(let field of (dataset.fields || [])){
                             if(field.name===newFieldName){
                                 alert(`${window.i18n.tree.addField}`);
                                 return;

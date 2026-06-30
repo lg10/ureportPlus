@@ -143,7 +143,33 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 				}
 				context.put("tools", tools);
 			}
-			context.put("contextPath", req.getContextPath());
+			if(htmlReport!=null){
+			context.put("showPageNumber", htmlReport.isShowPageNumber());
+			context.put("pageNumPos", htmlReport.getPageNumPos());
+			context.put("pageNumAlign", htmlReport.getPageNumAlign());
+			context.put("paperWidth", htmlReport.getPaperWidth());
+			context.put("paperHeight", htmlReport.getPaperHeight());
+			context.put("paperMarginLeft", htmlReport.getPaperMarginLeft());
+			context.put("paperMarginRight", htmlReport.getPaperMarginRight());
+			context.put("paperMarginTop", htmlReport.getPaperMarginTop());
+			context.put("paperMarginBottom", htmlReport.getPaperMarginBottom());
+			context.put("paperOrientation", htmlReport.getPaperOrientation());
+			context.put("headerHtml", htmlReport.getHeaderHtml());
+			context.put("footerHtml", htmlReport.getFooterHtml());
+		}else{
+			context.put("paperWidth", 210);
+			context.put("paperHeight", 297);
+			context.put("paperMarginLeft", 15);
+			context.put("paperMarginRight", 15);
+			context.put("paperMarginTop", 20);
+			context.put("paperMarginBottom", 20);
+			context.put("showPageNumber", false);
+			context.put("pageNumPos", "footer");
+			context.put("pageNumAlign", "center");
+			context.put("headerHtml", "");
+			context.put("footerHtml", "");
+		}
+		context.put("contextPath", req.getContextPath());
 			resp.setContentType("text/html");
 			resp.setCharacterEncoding("utf-8");
 			Template template=ve.getTemplate("ureport-html/html-preview.html","utf-8");
@@ -217,29 +243,43 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 		if(list.size()>0){
 			for(int i=0;i<list.size();i++){
 				List<Page> columnPages=list.get(i);
-				if(i==0){
-					String html=htmlProducer.produce(context,columnPages,pageData.getColumnMargin(),false);
-					sb.append(html);											
-				}else{
-					String html=htmlProducer.produce(context,columnPages,pageData.getColumnMargin(),false);
-					sb.append(html);											
-				}
+				String html=htmlProducer.produce(context,columnPages,pageData.getColumnMargin(),false);
+				sb.append(html);
 			}
 		}else{
 			List<Page> pages=report.getPages();
-			for(int i=0;i<pages.size();i++){
-				Page page=pages.get(i);
-				if(i==0){
-					String html=htmlProducer.produce(context,page, false);
-					sb.append(html);
-				}else{
-					String html=htmlProducer.produce(context,page, true);
-					sb.append(html);
-				}
+			for(Page page:pages){
+				String html=htmlProducer.produce(context,page, false);
+				sb.append(html);
 			}
+		}
+		// 提取页眉/页脚纯文本（用于CSS @page margin boxes）
+		String hfHeaderLeft="", hfHeaderCenter="", hfHeaderRight="";
+		String hfFooterLeft="", hfFooterCenter="", hfFooterRight="";
+		if(report.getHeader()!=null){
+			try{
+				com.bstek.ureport.build.paging.HeaderFooter hf=report.getHeader().buildHeaderFooter(1,report.getContext());
+				hfHeaderLeft=hf.getLeft()!=null?hf.getLeft():"";
+				hfHeaderCenter=hf.getCenter()!=null?hf.getCenter():"";
+				hfHeaderRight=hf.getRight()!=null?hf.getRight():"";
+			}catch(Exception e){}
+		}
+		if(report.getFooter()!=null){
+			try{
+				com.bstek.ureport.build.paging.HeaderFooter hf=report.getFooter().buildHeaderFooter(1,report.getContext());
+				hfFooterLeft=hf.getLeft()!=null?hf.getLeft():"";
+				hfFooterCenter=hf.getCenter()!=null?hf.getCenter():"";
+				hfFooterRight=hf.getRight()!=null?hf.getRight():"";
+			}catch(Exception e){}
 		}
 		Map<String,String> map=new HashMap<String,String>();
 		map.put("html", sb.toString());
+		map.put("headerLeft", hfHeaderLeft);
+		map.put("headerCenter", hfHeaderCenter);
+		map.put("headerRight", hfHeaderRight);
+		map.put("footerLeft", hfFooterLeft);
+		map.put("footerCenter", hfFooterCenter);
+		map.put("footerRight", hfFooterRight);
 		writeObjectToJson(resp, map);
 	}
 	
@@ -297,24 +337,50 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 				htmlReport.setTotalPage(pageData.getTotalPages());
 				htmlReport.setPageIndex(index);
 			}else{
-				html=htmlProducer.produce(report);				
+				// 打印预览模式：全部纸张页面堆叠展示，每页用 report-page-sheet 包裹
+				html=buildAllPagesHtml(report);
+				htmlReport.setPageIndex(0);
 			}
 			if(report.getPaper().isColumnEnabled()){
-				htmlReport.setColumn(report.getPaper().getColumnCount());				
+				htmlReport.setColumn(report.getPaper().getColumnCount());
 			}
-			htmlReport.setChartDatas(report.getContext().getChartDataMap().values());			
+			htmlReport.setChartDatas(report.getContext().getChartDataMap().values());
 			htmlReport.setContent(html);
 			htmlReport.setTotalPage(report.getPages().size());
 			htmlReport.setStyle(reportDefinition.getStyle());
 			htmlReport.setSearchFormData(reportDefinition.buildSearchFormData(report.getContext().getDatasetMap(),parameters));
 			htmlReport.setReportAlign(report.getPaper().getHtmlReportAlign().name());
 			htmlReport.setHtmlIntervalRefreshValue(report.getPaper().getHtmlIntervalRefreshValue());
+			htmlReport.setShowPageNumber(report.getPaper().isShowPageNumber());
+			htmlReport.setPageNumPos(report.getPaper().getPageNumPos());
+			htmlReport.setPageNumAlign(report.getPaper().getPageNumAlign());
+				applyPaperToHtmlReport(report.getPaper(), report, htmlReport);
 		}else{
 			if(StringUtils.isNotBlank(pageIndex) && !pageIndex.equals("0")){
 				int index=Integer.valueOf(pageIndex);
 				htmlReport=exportManager.exportHtml(file,req.getContextPath(),parameters,index);								
 			}else{
-				htmlReport=exportManager.exportHtml(file,req.getContextPath(),parameters);				
+				// 打印预览模式：全部纸张页面堆叠展示
+				ReportDefinition reportDefinition=reportRender.getReportDefinition(file);
+				Report report=reportRender.render(reportDefinition, parameters);
+				Map<String, ChartData> chartMap=report.getContext().getChartDataMap();
+				if(chartMap.size()>0){
+					CacheUtils.storeChartDataMap(chartMap);
+				}
+				htmlReport=new HtmlReport();
+				String html=buildAllPagesHtml(report);
+				htmlReport.setContent(html);
+				if(reportDefinition.getPaper().isColumnEnabled()){
+					htmlReport.setColumn(reportDefinition.getPaper().getColumnCount());
+				}
+				htmlReport.setTotalPage(report.getPages().size());
+				htmlReport.setPageIndex(0);
+				htmlReport.setStyle(reportDefinition.getStyle());
+				htmlReport.setSearchFormData(reportDefinition.buildSearchFormData(report.getContext().getDatasetMap(),parameters));
+				htmlReport.setReportAlign(report.getPaper().getHtmlReportAlign().name());
+				htmlReport.setChartDatas(report.getContext().getChartDataMap().values());
+				htmlReport.setHtmlIntervalRefreshValue(report.getPaper().getHtmlIntervalRefreshValue());
+				applyPaperToHtmlReport(report.getPaper(), report, htmlReport);
 			}
 		}
 		return htmlReport;
@@ -355,10 +421,151 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 		return trace;
 	}
 	
+	/**
+	 * 将Paper配置(mm)和页眉页脚复制到HtmlReport
+	 */
+	private void applyPaperToHtmlReport(Paper paper, Report report, HtmlReport htmlReport) {
+		int pw = paper.getWidth();
+		int ph = paper.getHeight();
+		if (pw == 0) pw = 595;
+		if (ph == 0) ph = 842;
+		// 横向时交换宽高
+		if (paper.getOrientation() != null && "landscape".equals(paper.getOrientation().name())) {
+			int tmp = pw; pw = ph; ph = tmp;
+		}
+		htmlReport.setPaperWidth(Math.round(pw * 100f / 283f));
+		htmlReport.setPaperHeight(Math.round(ph * 100f / 283f));
+		htmlReport.setPaperMarginLeft(Math.round(paper.getLeftMargin() * 100f / 283f));
+		htmlReport.setPaperMarginRight(Math.round(paper.getRightMargin() * 100f / 283f));
+		htmlReport.setPaperMarginTop(Math.round(paper.getTopMargin() * 100f / 283f));
+		htmlReport.setPaperMarginBottom(Math.round(paper.getBottomMargin() * 100f / 283f));
+		htmlReport.setPaperOrientation(paper.getOrientation() != null ? paper.getOrientation().name() : "portrait");
+		htmlReport.setShowPageNumber(paper.isShowPageNumber());
+		htmlReport.setPageNumPos(paper.getPageNumPos() != null ? paper.getPageNumPos() : "footer");
+		htmlReport.setPageNumAlign(paper.getPageNumAlign() != null ? paper.getPageNumAlign() : "center");
+
+		// 渲染页眉页脚
+		if (report.getHeader() != null && report.getPages().size() > 0) {
+			com.bstek.ureport.build.paging.HeaderFooter hf = report.getHeader()
+				.buildHeaderFooter(1, report.getContext());
+			htmlReport.setHeaderHtml(buildHfHtml(hf, true));
+		}
+		if (report.getFooter() != null && report.getPages().size() > 0) {
+			com.bstek.ureport.build.paging.HeaderFooter hf = report.getFooter()
+				.buildHeaderFooter(1, report.getContext());
+			htmlReport.setFooterHtml(buildHfHtml(hf, false));
+		}
+	}
+
+	private String buildHfHtml(com.bstek.ureport.build.paging.HeaderFooter hf, boolean isHeader) {
+		StringBuilder sb = new StringBuilder();
+		String borderStyle = isHeader ? "border-bottom:1px solid #000;" : "border-top:1px solid #000;";
+		sb.append("<div class='report-hf' style='display:flex;justify-content:space-between;font-family:");
+		sb.append(hf.getFontFamily() != null ? hf.getFontFamily() : "宋体");
+		sb.append(";font-size:").append(hf.getFontSize()).append("pt;");
+		sb.append("color:rgb(").append(hf.getForecolor() != null ? hf.getForecolor() : "0,0,0").append(");");
+		if (hf.isBold()) sb.append("font-weight:bold;");
+		if (hf.isItalic()) sb.append("font-style:italic;");
+		if (hf.isUnderline()) sb.append("text-decoration:underline;");
+		sb.append(borderStyle);
+		sb.append("padding:4px 0;margin-bottom:4px;");
+		sb.append("'>");
+		sb.append("<span>").append(hf.getLeft() != null ? hf.getLeft() : "").append("</span>");
+		sb.append("<span>").append(hf.getCenter() != null ? hf.getCenter() : "").append("</span>");
+		sb.append("<span>").append(hf.getRight() != null ? hf.getRight() : "").append("</span>");
+		sb.append("</div>");
+		return sb.toString();
+	}
+
+	/**
+	 * 构建全部纸张页面的HTML（打印预览模式），每页用 report-page-sheet 包裹，实现A4纸张堆叠展示。
+	 * 每张纸独立渲染页眉/页脚。页眉页脚位置：上边距=页眉分割线上方空白，下边距=页脚分割线下方空白。
+	 */
+	private String buildAllPagesHtml(Report report) {
+		FullPageData pageData = PageBuilder.buildFullPageData(report);
+		Context context = report.getContext();
+		com.bstek.ureport.definition.Paper paper = report.getPaper();
+		int mt = Math.round(paper.getTopMargin() * 100f / 283f);
+		int mb = Math.round(paper.getBottomMargin() * 100f / 283f);
+		int ml = Math.round(paper.getLeftMargin() * 100f / 283f);
+		int mr = Math.round(paper.getRightMargin() * 100f / 283f);
+
+		StringBuilder sb = new StringBuilder();
+		List<List<Page>> list = pageData.getPageList();
+		int pageNum = 0;
+		if (list != null && list.size() > 0) {
+			for (int i = 0; i < list.size(); i++) {
+				pageNum++;
+				List<Page> columnPages = list.get(i);
+				String pageHtml = htmlProducer.produce(context, columnPages, pageData.getColumnMargin(), false);
+				sb.append(buildPageSheet(pageHtml, report, pageNum, mt, mb, ml, mr));
+			}
+		} else {
+			List<Page> pages = report.getPages();
+			if (pages != null) {
+				for (Page page : pages) {
+					pageNum++;
+					String pageHtml = htmlProducer.produce(context, page, false);
+					sb.append(buildPageSheet(pageHtml, report, pageNum, mt, mb, ml, mr));
+				}
+			}
+		}
+		return sb.toString();
+	}
+
+	private String buildPageSheet(String pageHtml, Report report, int pageNum, int mt, int mb, int ml, int mr) {
+		StringBuilder sb = new StringBuilder();
+		// 纸张使用CSS类统一padding，不重复inline（避免与CSS叠加）
+		sb.append("<div class='report-page-sheet'>");
+		boolean hasHeader = report.getHeader() != null;
+		boolean hasFooter = report.getFooter() != null;
+		if (hasHeader) {
+			// 负margin拉入上边距区，不挤占内容空间
+			sb.append("<div class='report-hf' style='margin:-").append(mt).append("mm 0 4px 0;padding:0'>");
+			try {
+				com.bstek.ureport.build.paging.HeaderFooter hf =
+					report.getHeader().buildHeaderFooter(pageNum, report.getContext());
+				sb.append(buildHfHtml(hf, true));
+			} catch (Exception e) {}
+			sb.append("</div>");
+		}
+		sb.append(pageHtml);
+		if (hasFooter) {
+			// 负margin拉入下边距区
+			sb.append("<div class='report-hf' style='margin:4px 0 -").append(mb).append("mm 0;padding:0'>");
+			try {
+				com.bstek.ureport.build.paging.HeaderFooter hf =
+					report.getFooter().buildHeaderFooter(pageNum, report.getContext());
+				sb.append(buildHfHtml(hf, false));
+			} catch (Exception e) {}
+			sb.append("</div>");
+		}
+		sb.append("</div>");
+		return sb.toString();
+	}
+
+	private String buildPageHeader(Report report, int pageNum) {
+		if (report.getHeader() == null) return "";
+		try {
+			com.bstek.ureport.build.paging.HeaderFooter hf =
+				report.getHeader().buildHeaderFooter(pageNum, report.getContext());
+			return buildHfHtml(hf, true);
+		} catch (Exception e) { return ""; }
+	}
+
+	private String buildPageFooter(Report report, int pageNum) {
+		if (report.getFooter() == null) return "";
+		try {
+			com.bstek.ureport.build.paging.HeaderFooter hf =
+				report.getFooter().buildHeaderFooter(pageNum, report.getContext());
+			return buildHfHtml(hf, false);
+		} catch (Exception e) { return ""; }
+	}
+
 	public void setExportManager(ExportManager exportManager) {
 		this.exportManager = exportManager;
 	}
-	
+
 	public void setReportBuilder(ReportBuilder reportBuilder) {
 		this.reportBuilder = reportBuilder;
 	}

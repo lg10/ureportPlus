@@ -32,6 +32,18 @@ public class HtmlReport {
 	private String reportAlign;
 	private Collection<ChartData> chartDatas;
 	private int htmlIntervalRefreshValue;
+	private boolean showPageNumber;
+	private String pageNumPos;
+	private String pageNumAlign;
+	private int paperWidth;
+	private int paperHeight;
+	private int paperMarginLeft;
+	private int paperMarginRight;
+	private int paperMarginTop;
+	private int paperMarginBottom;
+	private String paperOrientation;
+	private String headerHtml;
+	private String footerHtml;
 	private SearchFormData searchFormData;
 	public String getContent() {
 		return content;
@@ -99,4 +111,40 @@ public class HtmlReport {
 	public void setSearchFormData(SearchFormData searchFormData) {
 		this.searchFormData = searchFormData;
 	}
+	public boolean isShowPageNumber() {
+		return showPageNumber;
+	}
+	public void setShowPageNumber(boolean showPageNumber) {
+		this.showPageNumber = showPageNumber;
+	}
+	public String getPageNumPos() {
+		return pageNumPos;
+	}
+	public void setPageNumPos(String pageNumPos) {
+		this.pageNumPos = pageNumPos;
+	}
+	public String getPageNumAlign() {
+		return pageNumAlign;
+	}
+	public void setPageNumAlign(String pageNumAlign) {
+		this.pageNumAlign = pageNumAlign;
+	}
+	public int getPaperWidth() { return paperWidth; }
+	public void setPaperWidth(int paperWidth) { this.paperWidth = paperWidth; }
+	public int getPaperHeight() { return paperHeight; }
+	public void setPaperHeight(int paperHeight) { this.paperHeight = paperHeight; }
+	public int getPaperMarginLeft() { return paperMarginLeft; }
+	public void setPaperMarginLeft(int paperMarginLeft) { this.paperMarginLeft = paperMarginLeft; }
+	public int getPaperMarginRight() { return paperMarginRight; }
+	public void setPaperMarginRight(int paperMarginRight) { this.paperMarginRight = paperMarginRight; }
+	public int getPaperMarginTop() { return paperMarginTop; }
+	public void setPaperMarginTop(int paperMarginTop) { this.paperMarginTop = paperMarginTop; }
+	public int getPaperMarginBottom() { return paperMarginBottom; }
+	public void setPaperMarginBottom(int paperMarginBottom) { this.paperMarginBottom = paperMarginBottom; }
+	public String getPaperOrientation() { return paperOrientation; }
+	public void setPaperOrientation(String paperOrientation) { this.paperOrientation = paperOrientation; }
+	public String getHeaderHtml() { return headerHtml; }
+	public void setHeaderHtml(String headerHtml) { this.headerHtml = headerHtml; }
+	public String getFooterHtml() { return footerHtml; }
+	public void setFooterHtml(String footerHtml) { this.footerHtml = footerHtml; }
 }

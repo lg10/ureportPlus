@@ -276,6 +276,9 @@ public class DatasourceServletAction extends RenderPageServletAction {
 			sql=sql.substring(2, sql.length()-1);
 			Expression expr=ExpressionUtils.parseExpression(sql);
 			sql=executeSqlExpr(expr,context);
+			if(sql==null){
+				sql="";
+			}
 			return sql;
 		}else{
 			String sqlForUse=sql;
@@ -286,6 +289,9 @@ public class DatasourceServletAction extends RenderPageServletAction {
 				String sqlExpr=substr.substring(2,substr.length()-1);
 				Expression expr=ExpressionUtils.parseExpression(sqlExpr);
 				String result=executeSqlExpr(expr, context);
+				if(result==null){
+					result="";
+				}
 				sqlForUse=sqlForUse.replace(substr, result);
 			}
 			Utils.logToConsole("DESIGN SQL:"+sqlForUse);

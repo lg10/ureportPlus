@@ -269,106 +269,127 @@ public class HtmlProducer{
 	
 	private String buildCustomStyle(Cell cell){
 		CellStyle style=cell.getCustomCellStyle();
+		CellStyle baseStyle=cell.getCellStyle();
 		CellStyle rowStyle=cell.getRow().getCustomCellStyle();
 		CellStyle colStyle=cell.getColumn().getCustomCellStyle();
-		if(style==null && rowStyle==null && colStyle==null)return "";
 		StringBuilder sb=new StringBuilder();
 		String forecolor=null;
-		if(style!=null){
+		if(style!=null && StringUtils.isNotBlank(style.getForecolor())){
 			forecolor=style.getForecolor();
 		}
-		if(rowStyle!=null){
+		if(forecolor==null && rowStyle!=null && StringUtils.isNotBlank(rowStyle.getForecolor())){
 			forecolor=rowStyle.getForecolor();
 		}
-		if(colStyle!=null){
+		if(forecolor==null && colStyle!=null && StringUtils.isNotBlank(colStyle.getForecolor())){
 			forecolor=colStyle.getForecolor();
+		}
+		if(forecolor==null && baseStyle!=null && StringUtils.isNotBlank(baseStyle.getForecolor())){
+			forecolor=baseStyle.getForecolor();
 		}
 		if(StringUtils.isNotBlank(forecolor)){
 			sb.append("color:rgb("+forecolor+");");
 		}
 		String bgcolor=null;
-		if(style!=null){
+		if(style!=null && StringUtils.isNotBlank(style.getBgcolor())){
 			bgcolor=style.getBgcolor();
 		}
-		if(rowStyle!=null){
+		if(bgcolor==null && rowStyle!=null && StringUtils.isNotBlank(rowStyle.getBgcolor())){
 			bgcolor=rowStyle.getBgcolor();
 		}
-		if(colStyle!=null){
+		if(bgcolor==null && colStyle!=null && StringUtils.isNotBlank(colStyle.getBgcolor())){
 			bgcolor=colStyle.getBgcolor();
+		}
+		if(bgcolor==null && baseStyle!=null && StringUtils.isNotBlank(baseStyle.getBgcolor())){
+			bgcolor=baseStyle.getBgcolor();
 		}
 		if(StringUtils.isNotBlank(bgcolor)){
 			sb.append("background-color:rgb("+bgcolor+");");
 		}
 		String fontFamily=null;
-		if(style!=null){
+		if(style!=null && StringUtils.isNotBlank(style.getFontFamily())){
 			fontFamily=style.getFontFamily();
 		}
-		if(rowStyle!=null){
+		if(fontFamily==null && rowStyle!=null && StringUtils.isNotBlank(rowStyle.getFontFamily())){
 			fontFamily=rowStyle.getFontFamily();
 		}
-		if(colStyle!=null){
+		if(fontFamily==null && colStyle!=null && StringUtils.isNotBlank(colStyle.getFontFamily())){
 			fontFamily=colStyle.getFontFamily();
+		}
+		if(fontFamily==null && baseStyle!=null && StringUtils.isNotBlank(baseStyle.getFontFamily())){
+			fontFamily=baseStyle.getFontFamily();
 		}
 		if(StringUtils.isNotBlank(fontFamily)){
 			sb.append("font-family:"+fontFamily+";");
 		}
 		int fontSize=0;
-		if(style!=null){
+		if(style!=null && style.getFontSize()>0){
 			fontSize=style.getFontSize();
 		}
-		if(rowStyle!=null){
+		if(fontSize==0 && rowStyle!=null && rowStyle.getFontSize()>0){
 			fontSize=rowStyle.getFontSize();
 		}
-		if(colStyle!=null){
+		if(fontSize==0 && colStyle!=null && colStyle.getFontSize()>0){
 			fontSize=colStyle.getFontSize();
+		}
+		if(fontSize==0 && baseStyle!=null && baseStyle.getFontSize()>0){
+			fontSize=baseStyle.getFontSize();
 		}
 		if(fontSize>0){
 			sb.append("font-size:"+fontSize+"pt;");
 		}
 		Boolean bold=null;
-		if(style!=null){
+		if(style!=null && style.getBold()!=null){
 			bold=style.getBold();
 		}
-		if(rowStyle!=null){
+		if(bold==null && rowStyle!=null && rowStyle.getBold()!=null){
 			bold=rowStyle.getBold();
 		}
-		if(colStyle!=null){
+		if(bold==null && colStyle!=null && colStyle.getBold()!=null){
 			bold=colStyle.getBold();
+		}
+		if(bold==null && baseStyle!=null && baseStyle.getBold()!=null){
+			bold=baseStyle.getBold();
 		}
 		if(bold!=null){
 			if(bold){
 				sb.append("font-weight:bold;");
 			}else{
-				sb.append("font-weight:normal;");				
+				sb.append("font-weight:normal;");
 			}
 		}
 		Boolean italic=null;
-		if(style!=null){
+		if(style!=null && style.getItalic()!=null){
 			italic=style.getItalic();
 		}
-		if(rowStyle!=null){
+		if(italic==null && rowStyle!=null && rowStyle.getItalic()!=null){
 			italic=rowStyle.getItalic();
 		}
-		if(colStyle!=null){
+		if(italic==null && colStyle!=null && colStyle.getItalic()!=null){
 			italic=colStyle.getItalic();
+		}
+		if(italic==null && baseStyle!=null && baseStyle.getItalic()!=null){
+			italic=baseStyle.getItalic();
 		}
 		if(italic!=null){
 			if(italic){
 				sb.append("font-style:italic;");
 			}else{
 				sb.append("font-style:normal;");
-				
+
 			}
 		}
 		Boolean underline=null;
-		if(style!=null){
+		if(style!=null && style.getUnderline()!=null){
 			underline=style.getUnderline();
 		}
-		if(rowStyle!=null){
+		if(underline==null && rowStyle!=null && rowStyle.getUnderline()!=null){
 			underline=rowStyle.getUnderline();
 		}
-		if(colStyle!=null){
+		if(underline==null && colStyle!=null && colStyle.getUnderline()!=null){
 			underline=colStyle.getUnderline();
+		}
+		if(underline==null && baseStyle!=null && baseStyle.getUnderline()!=null){
+			underline=baseStyle.getUnderline();
 		}
 		if(underline!=null){
 			if(underline){
@@ -378,27 +399,33 @@ public class HtmlProducer{
 			}
 		}
 		Alignment align=null;
-		if(style!=null){
+		if(style!=null && style.getAlign()!=null){
 			align=style.getAlign();
 		}
-		if(rowStyle!=null){
+		if(align==null && rowStyle!=null && rowStyle.getAlign()!=null){
 			align=rowStyle.getAlign();
 		}
-		if(colStyle!=null){
+		if(align==null && colStyle!=null && colStyle.getAlign()!=null){
 			align=colStyle.getAlign();
+		}
+		if(align==null && baseStyle!=null && baseStyle.getAlign()!=null){
+			align=baseStyle.getAlign();
 		}
 		if(align!=null){
 			sb.append("text-align:"+align.name()+";");
 		}
 		Alignment valign=null;
-		if(style!=null){
+		if(style!=null && style.getValign()!=null){
 			valign=style.getValign();
 		}
-		if(rowStyle!=null){
+		if(valign==null && rowStyle!=null && rowStyle.getValign()!=null){
 			valign=rowStyle.getValign();
 		}
-		if(colStyle!=null){
+		if(valign==null && colStyle!=null && colStyle.getValign()!=null){
 			valign=colStyle.getValign();
+		}
+		if(valign==null && baseStyle!=null && baseStyle.getValign()!=null){
+			valign=baseStyle.getValign();
 		}
 		if(valign!=null){
 			sb.append("vertical-align:"+valign.name()+";");

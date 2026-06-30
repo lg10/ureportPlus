@@ -29,6 +29,7 @@ export default class DatasourceDialog{
     }
 
     initBody(body,footer){
+        const _this=this;
         const dsRow=$(`<div class="row" style="margin-bottom: 10px;margin-right:6px;"><div class="col-md-2" style="padding: 0 10px 0 0px;text-align:right;margin-top:5px">${window.i18n.dialog.datasource.name}</div></div>`);
         const dsNameGroup=$(`<div class="col-md-10" style="padding: 0 10px 0 0px"></div>`);
         this.dsNameEditor=$(`<input type="text" class="form-control" style="font-size: 13px">`);
@@ -52,16 +53,60 @@ export default class DatasourceDialog{
 
         const driverRow=$(`<div class="row" style="margin-bottom: 10px;margin-right:6px;"><div class="col-md-2" style="padding: 0 10px 0 0px;text-align:right;margin-top:5px">${window.i18n.dialog.datasource.driver}</div></div>`);
         const driverGroup=$(`<div class="col-md-10" style="padding: 0 10px 0 0px"></div>`);
-        this.driverEditor=$(`<input type="text" class="form-control" style="font-size: 13px">`);
+
+        // 驱动快捷选择下拉
+        const driverPreset=$(`<select class="form-control" style="font-size: 13px;margin-bottom:5px">
+            <option value="">${window.i18n.dialog.datasource.driverPreset}</option>
+            <option value="mysql">com.mysql.cj.jdbc.Driver (MySQL)</option>
+            <option value="h2">org.h2.Driver (H2)</option>
+            <option value="mysql5">com.mysql.jdbc.Driver (MySQL 5.x)</option>
+            <option value="oracle">oracle.jdbc.OracleDriver (Oracle)</option>
+            <option value="db2">com.ibm.db2.jcc.DB2Driver (DB2)</option>
+            <option value="sqlserver">com.microsoft.sqlserver.jdbc.SQLServerDriver (SQL Server)</option>
+        </select>`);
+        driverGroup.append(driverPreset);
+
+        this.driverEditor=$(`<input type="text" class="form-control" style="font-size: 13px" placeholder="${window.i18n.dialog.datasource.driverTip}">`);
         driverGroup.append(this.driverEditor);
         driverRow.append(driverGroup);
         body.append(driverRow);
+
+        // 驱动URL自动填充映射
+        const driverUrlMap={
+            mysql: "jdbc:mysql://127.0.0.1:3306/ktpms?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&tinyInt1isBit=false&useSSL=false",
+            h2: "jdbc:h2:mem:ktpms;DB_CLOSE_DELAY=-1;MODE=MySQL",
+            mysql5: "jdbc:mysql://127.0.0.1:3306/ktpms?useUnicode=true&characterEncoding=UTF-8",
+            oracle: "jdbc:oracle:thin:@127.0.0.1:1521:ktpms",
+            db2: "jdbc:db2://127.0.0.1:50000/ktpms",
+            sqlserver: "jdbc:sqlserver://127.0.0.1:1433;databaseName=ktpms"
+        };
+        driverPreset.change(function(){
+            const val=$(this).val();
+            if(val && driverUrlMap[val]){
+                const driverMap={
+                    mysql: "com.mysql.cj.jdbc.Driver",
+                    h2: "org.h2.Driver",
+                    mysql5: "com.mysql.jdbc.Driver",
+                    oracle: "oracle.jdbc.OracleDriver",
+                    db2: "com.ibm.db2.jcc.DB2Driver",
+                    sqlserver: "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+                };
+                _this.driverEditor.val(driverMap[val]);
+                _this.urlEditor.val(driverUrlMap[val]);
+            }else{
+                _this.driverEditor.val("");
+                _this.urlEditor.val("");
+            }
+        });
+
         this.driverEditor.completer({
             source: [
+                "com.mysql.cj.jdbc.Driver",
+                "org.h2.Driver",
+                "com.mysql.jdbc.Driver",
                 "oracle.jdbc.OracleDriver",
                 "com.ibm.db2.jcc.DB2Driver",
-                "com.microsoft.sqlserver.jdbc.SQLServerDriver",
-                "com.mysql.jdbc.Driver"
+                "com.microsoft.sqlserver.jdbc.SQLServerDriver"
             ],
             suggest: true,
             zIndex:200000
@@ -84,7 +129,6 @@ export default class DatasourceDialog{
             zIndex:200000
         });
 
-        const _this=this;
         const testButton=$(`<button type="button" class="btn btn-default">${window.i18n.dialog.datasource.test}</button>`);
         footer.append(testButton);
         testButton.click(function(){

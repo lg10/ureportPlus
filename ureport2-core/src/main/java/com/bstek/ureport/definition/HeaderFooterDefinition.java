@@ -67,17 +67,26 @@ public class HeaderFooterDefinition implements Serializable{
 				hf.setLeft(obj.toString());
 			}
 		}
+		if(org.apache.commons.lang3.StringUtils.isBlank(hf.getLeft()) && org.apache.commons.lang3.StringUtils.isNotBlank(left)){
+			hf.setLeft(left);
+		}
 		if(centerExpression!=null){
 			Object obj = buildExpression(context,centerExpression);
 			if(obj!=null){
 				hf.setCenter(obj.toString());
 			}
 		}
+		if(org.apache.commons.lang3.StringUtils.isBlank(hf.getCenter()) && org.apache.commons.lang3.StringUtils.isNotBlank(center)){
+			hf.setCenter(center);
+		}
 		if(rightExpression!=null){
 			Object obj = buildExpression(context,rightExpression);
 			if(obj!=null){
 				hf.setRight(obj.toString());
 			}
+		}
+		if(org.apache.commons.lang3.StringUtils.isBlank(hf.getRight()) && org.apache.commons.lang3.StringUtils.isNotBlank(right)){
+			hf.setRight(right);
 		}
 		return hf;
 	}

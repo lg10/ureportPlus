@@ -60,6 +60,9 @@ public class SqlDatasetDefinition implements DatasetDefinition {
 				String sqlExpr=substr.substring(2,substr.length()-1);
 				Expression expr=ExpressionUtils.parseExpression(sqlExpr);
 				String result=executeSqlExpr(expr, context);
+				if(result==null){
+					result="";
+				}
 				sqlForUse=sqlForUse.replace(substr, result);
 			}
 		}

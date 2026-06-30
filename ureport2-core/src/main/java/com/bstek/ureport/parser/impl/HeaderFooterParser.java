@@ -68,20 +68,30 @@ public class HeaderFooterParser implements Parser<HeaderFooterDefinition> {
 			if(name.equals("left")){
 				hf.setLeft(ele.getText());
 				if(StringUtils.isNotBlank(hf.getLeft())){
-					Expression expr=ExpressionUtils.parseExpression(hf.getLeft());
-					hf.setLeftExpression(expr);
+					try{
+						Expression expr=ExpressionUtils.parseExpression(hf.getLeft());
+						hf.setLeftExpression(expr);
+					}catch(Exception e){
+						// 纯文本不是合法表达式，保留原始文本即可
+					}
 				}
 			}else if(name.equals("center")){
 				hf.setCenter(ele.getText());
 				if(StringUtils.isNotBlank(hf.getCenter())){
-					Expression expr=ExpressionUtils.parseExpression(hf.getCenter());
-					hf.setCenterExpression(expr);
+					try{
+						Expression expr=ExpressionUtils.parseExpression(hf.getCenter());
+						hf.setCenterExpression(expr);
+					}catch(Exception e){
+					}
 				}
 			}else if(name.equals("right")){
 				hf.setRight(ele.getText());
 				if(StringUtils.isNotBlank(hf.getRight())){
-					Expression expr=ExpressionUtils.parseExpression(hf.getRight());
-					hf.setRightExpression(expr);
+					try{
+						Expression expr=ExpressionUtils.parseExpression(hf.getRight());
+						hf.setRightExpression(expr);
+					}catch(Exception e){
+					}
 				}
 			}
 		}
