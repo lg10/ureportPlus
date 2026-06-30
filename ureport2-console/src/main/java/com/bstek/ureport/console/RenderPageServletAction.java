@@ -28,12 +28,11 @@ import org.springframework.context.ApplicationContextAware;
  * @author Jacky.gao
  * @since 2016年6月6日
  */
-public abstract class RenderPageServletAction extends WriteJsonServletAction implements ApplicationContextAware{
+public abstract class RenderPageServletAction extends WriteJsonServletAction{
 	protected VelocityEngine ve;
-	protected ApplicationContext applicationContext;
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		this.applicationContext=applicationContext;
+		super.setApplicationContext(applicationContext);
 		ve = new VelocityEngine();
 		ve.setProperty(Velocity.RESOURCE_LOADER, "class");
 		ve.setProperty("class.resource.loader.class","org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");

@@ -457,7 +457,12 @@
       "syntaxCheckFail": "语法检查失败！",
       "pageNumber": "页码配置：",
       "showPageNumber": "显示页码",
-      "pageNumPos": "位置："
+      "pageNumPos": "位置：",
+      "authSetting": "授权配置",
+      "requireAuth": "需要授权：",
+      "authEnabled": "启用授权验证",
+      "authParams": "验证参数：",
+      "authParamsPlaceholder": "多个参数以逗号分隔，如 hotelId,deptId"
     },
     "springDS": {
       "title": "SpringBean数据源配置",

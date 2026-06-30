@@ -231,7 +231,8 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 		}else{
 			reportDefinition=reportRender.getReportDefinition(file);
 		}
-		Report report=reportBuilder.buildReport(reportDefinition, parameters);	
+		checkAuth(reportDefinition, req);
+		Report report=reportBuilder.buildReport(reportDefinition, parameters);
 		Map<String, ChartData> chartMap=report.getContext().getChartDataMap();
 		if(chartMap.size()>0){
 			CacheUtils.storeChartDataMap(chartMap);				
@@ -291,13 +292,14 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 		}
 		ReportDefinition report=null;
 		if(file.equals(PREVIEW_KEY)){
-			report=(ReportDefinition)TempObjectCache.getObject(PREVIEW_KEY);	
+			report=(ReportDefinition)TempObjectCache.getObject(PREVIEW_KEY);
 			if(report==null){
 				throw new ReportDesignException("Report data has expired.");
 			}
 		}else{
 			report=reportRender.getReportDefinition(file);
 		}
+		checkAuth(report, req);
 		Paper paper=report.getPaper();
 		writeObjectToJson(resp, paper);
 	}
@@ -316,6 +318,7 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 			if(reportDefinition==null){
 				throw new ReportDesignException("Report data has expired,can not do preview.");
 			}
+			checkAuth(reportDefinition, req);
 			Report report=reportBuilder.buildReport(reportDefinition, parameters);
 			Map<String, ChartData> chartMap=report.getContext().getChartDataMap();
 			if(chartMap.size()>0){
@@ -356,12 +359,13 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 			htmlReport.setPageNumAlign(report.getPaper().getPageNumAlign());
 				applyPaperToHtmlReport(report.getPaper(), report, htmlReport);
 		}else{
+			ReportDefinition reportDefinition=reportRender.getReportDefinition(file);
+			checkAuth(reportDefinition, req);
 			if(StringUtils.isNotBlank(pageIndex) && !pageIndex.equals("0")){
 				int index=Integer.valueOf(pageIndex);
-				htmlReport=exportManager.exportHtml(file,req.getContextPath(),parameters,index);								
+				htmlReport=exportManager.exportHtml(file,req.getContextPath(),parameters,index);
 			}else{
 				// 打印预览模式：全部纸张页面堆叠展示
-				ReportDefinition reportDefinition=reportRender.getReportDefinition(file);
 				Report report=reportRender.render(reportDefinition, parameters);
 				Map<String, ChartData> chartMap=report.getContext().getChartDataMap();
 				if(chartMap.size()>0){

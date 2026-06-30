@@ -42,6 +42,8 @@ public class Paper implements Serializable{
 	private boolean showPageNumber=false;
 	private String pageNumPos="footer";
 	private String pageNumAlign="center";
+	private boolean authEnabled=false;
+	private String authParams;
 	public int getLeftMargin() {
 		return leftMargin;
 	}
@@ -184,5 +186,21 @@ public class Paper implements Serializable{
 
 	public void setPageNumAlign(String pageNumAlign) {
 		this.pageNumAlign = pageNumAlign;
+	}
+
+	public boolean isAuthEnabled() {
+		return authEnabled;
+	}
+
+	public void setAuthEnabled(boolean authEnabled) {
+		this.authEnabled = authEnabled;
+	}
+
+	public String getAuthParams() {
+		return authParams;
+	}
+
+	public void setAuthParams(String authParams) {
+		this.authParams = authParams;
 	}
 }

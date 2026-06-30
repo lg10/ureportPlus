@@ -82,6 +82,14 @@ public class PaperParser implements Parser<Paper> {
 			paper.setHtmlIntervalRefreshValue(Integer.valueOf(htmlIntervalRefreshValue));
 		}
 		paper.setBgImage(element.attributeValue("bg-image"));
+		String authEnabled=element.attributeValue("auth-enabled");
+		if(StringUtils.isNotBlank(authEnabled)){
+			paper.setAuthEnabled(Boolean.valueOf(authEnabled));
+		}
+		String authParams=element.attributeValue("auth-params");
+		if(StringUtils.isNotBlank(authParams)){
+			paper.setAuthParams(authParams);
+		}
 		return paper;
 	}
 }

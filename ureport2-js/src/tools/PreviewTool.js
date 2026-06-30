@@ -43,6 +43,25 @@ export default class PreviewTool extends Tool{
         if(withPaging){
             targetUrl+='&_i=1&_r=1';
         }
+        const paper=this.context.reportDef.paper;
+        if(paper && paper.authEnabled){
+            const token=this.getAuthToken();
+            if(token){
+                targetUrl+='&token='+encodeURIComponent(token);
+            }
+            if(paper.authParams){
+                const paramNames=paper.authParams.split(',');
+                for(let name of paramNames){
+                    name=name.trim();
+                    if(name.length>0){
+                        const value=this.getAuthParamValue(name);
+                        if(value){
+                            targetUrl+='&'+encodeURIComponent(name)+'='+encodeURIComponent(value);
+                        }
+                    }
+                }
+            }
+        }
         const content=tableToXml(this.context);
         $.ajax({
             url:window._server+"/designer/savePreviewData",
@@ -56,6 +75,24 @@ export default class PreviewTool extends Tool{
                 alert(`${window.i18n.tools.preview.previewFail}`);
             }
         });
+    }
+    getAuthToken(){
+        if(typeof window._ureportGetAuthToken === 'function'){
+            return window._ureportGetAuthToken();
+        }
+        if(window._ureportAuthToken){
+            return window._ureportAuthToken;
+        }
+        return '';
+    }
+    getAuthParamValue(paramName){
+        if(typeof window._ureportGetAuthParam === 'function'){
+            return window._ureportGetAuthParam(paramName);
+        }
+        if(window._ureportAuthParams && window._ureportAuthParams[paramName]){
+            return window._ureportAuthParams[paramName];
+        }
+        return '';
     }
     getTitle(){
         return `${window.i18n.tools.preview.preview}`;

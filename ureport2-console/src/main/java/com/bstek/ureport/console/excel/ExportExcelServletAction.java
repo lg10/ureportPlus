@@ -35,6 +35,7 @@ import com.bstek.ureport.exception.ReportException;
 import com.bstek.ureport.export.ExportConfigure;
 import com.bstek.ureport.export.ExportConfigureImpl;
 import com.bstek.ureport.export.ExportManager;
+import com.bstek.ureport.export.ReportRender;
 import com.bstek.ureport.export.excel.high.ExcelProducer;
 import com.bstek.ureport.model.Report;
 
@@ -45,6 +46,7 @@ import com.bstek.ureport.model.Report;
 public class ExportExcelServletAction extends BaseServletAction {
 	private ReportBuilder reportBuilder;
 	private ExportManager exportManager;
+	private ReportRender reportRender;
 	private ExcelProducer excelProducer=new ExcelProducer();
 	
 	@Override
@@ -83,15 +85,18 @@ public class ExportExcelServletAction extends BaseServletAction {
 				if(reportDefinition==null){
 					throw new ReportDesignException("Report data has expired,can not do export excel.");
 				}
-				Report report=reportBuilder.buildReport(reportDefinition, parameters);	
+				checkAuth(reportDefinition, req);
+				Report report=reportBuilder.buildReport(reportDefinition, parameters);
 				if(withPage){
 					excelProducer.produceWithPaging(report, outputStream);
 				}else if(withSheet){
 					excelProducer.produceWithSheet(report, outputStream);
 				}else{
-					excelProducer.produce(report, outputStream);				
+					excelProducer.produce(report, outputStream);
 				}
 			}else{
+				ReportDefinition reportDef=reportRender.getReportDefinition(file);
+				checkAuth(reportDef, req);
 				ExportConfigure configure=new ExportConfigureImpl(file,parameters,outputStream);
 				if(withPage){
 					exportManager.exportExcelWithPaging(configure);
@@ -114,6 +119,10 @@ public class ExportExcelServletAction extends BaseServletAction {
 	}
 	public void setExportManager(ExportManager exportManager) {
 		this.exportManager = exportManager;
+	}
+
+	public void setReportRender(ReportRender reportRender) {
+		this.reportRender = reportRender;
 	}
 
 	@Override

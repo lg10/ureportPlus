@@ -520,6 +520,10 @@ export function tableToXml(context){
     if(paper.columnEnabled){
         xml+=` column-count="${paper.columnCount}" column-margin="${paper.columnMargin}"`;
     }
+    xml+=` auth-enabled="${paper.authEnabled || false}"`;
+    if(paper.authEnabled && paper.authParams){
+        xml+=` auth-params="${paper.authParams}"`;
+    }
     xml+=`></paper>`;
     if(context.reportDef.searchFormXml){
         xml+=context.reportDef.searchFormXml;

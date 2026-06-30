@@ -35,6 +35,7 @@ import com.bstek.ureport.exception.ReportException;
 import com.bstek.ureport.export.ExportConfigure;
 import com.bstek.ureport.export.ExportConfigureImpl;
 import com.bstek.ureport.export.ExportManager;
+import com.bstek.ureport.export.ReportRender;
 import com.bstek.ureport.export.word.high.WordProducer;
 import com.bstek.ureport.model.Report;
 
@@ -45,6 +46,7 @@ import com.bstek.ureport.model.Report;
 public class ExportWordServletAction extends BaseServletAction {
 	private ReportBuilder reportBuilder;
 	private ExportManager exportManager;
+	private ReportRender reportRender;
 	private WordProducer wordProducer=new WordProducer();
 	
 	@Override
@@ -76,9 +78,12 @@ public class ExportWordServletAction extends BaseServletAction {
 				if(reportDefinition==null){
 					throw new ReportDesignException("Report data has expired,can not do export word.");
 				}
-				Report report=reportBuilder.buildReport(reportDefinition, parameters);	
+				checkAuth(reportDefinition, req);
+				Report report=reportBuilder.buildReport(reportDefinition, parameters);
 				wordProducer.produce(report, outputStream);
 			}else{
+				ReportDefinition reportDef=reportRender.getReportDefinition(file);
+				checkAuth(reportDef, req);
 				ExportConfigure configure=new ExportConfigureImpl(file,parameters,outputStream);
 				exportManager.exportWord(configure);
 			}			
@@ -95,6 +100,10 @@ public class ExportWordServletAction extends BaseServletAction {
 	}
 	public void setExportManager(ExportManager exportManager) {
 		this.exportManager = exportManager;
+	}
+
+	public void setReportRender(ReportRender reportRender) {
+		this.reportRender = reportRender;
 	}
 
 	@Override

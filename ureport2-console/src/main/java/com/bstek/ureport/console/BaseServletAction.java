@@ -26,13 +26,26 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+
+import com.bstek.ureport.console.auth.ReportAuthCheck;
+import com.bstek.ureport.console.auth.UnauthorizedException;
+import com.bstek.ureport.definition.ReportDefinition;
 
 
 /**
  * @author Jacky.gao
  * @since 2016年6月3日
  */
-public abstract class BaseServletAction implements ServletAction {
+public abstract class BaseServletAction implements ServletAction, ApplicationContextAware {
+	protected ApplicationContext applicationContext;
+
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
+	}
 	protected Throwable buildRootException(Throwable throwable){
 		if(throwable.getCause()==null){
 			return throwable;
@@ -64,6 +77,32 @@ public abstract class BaseServletAction implements ServletAction {
 		}
 	}
 	
+	protected void checkAuth(ReportDefinition reportDef, HttpServletRequest req) {
+		if (!reportDef.getPaper().isAuthEnabled()) {
+			return;
+		}
+		ReportAuthCheck authCheck = null;
+		try {
+			authCheck = applicationContext.getBean(ReportAuthCheck.class);
+		} catch (Exception e) {
+			// No bean registered
+		}
+		if (authCheck == null) {
+			throw new UnauthorizedException("无授权：未配置授权验证服务");
+		}
+		String token = req.getParameter("token");
+		if (StringUtils.isBlank(token)) {
+			throw new UnauthorizedException("无授权：缺少token参数");
+		}
+		Map<String, String> verifiedParams = authCheck.validateToken(token, reportDef, req);
+		if (verifiedParams == null || verifiedParams.isEmpty()) {
+			throw new UnauthorizedException("无授权：token验证失败");
+		}
+		if (!authCheck.checkAuthParams(reportDef, req, verifiedParams)) {
+			throw new UnauthorizedException("无授权：参数验证不匹配");
+		}
+	}
+
 	protected Map<String, Object> buildParameters(HttpServletRequest req) {
 		Map<String,Object> parameters=new HashMap<String,Object>();
 		Enumeration<?> enumeration=req.getParameterNames();
@@ -74,7 +113,7 @@ public abstract class BaseServletAction implements ServletAction {
 			}
 			String name=obj.toString();
 			String value=req.getParameter(name);
-			if(name==null || value==null || name.startsWith("_")){
+			if(name==null || value==null || name.startsWith("_") || "token".equals(name)){
 				continue;
 			}
 			parameters.put(name, decode(value));

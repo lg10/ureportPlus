@@ -457,7 +457,12 @@
       "syntaxCheckFail": "Syntax check failed!",
       "pageNumber": "Page Number:",
       "showPageNumber": "Show Page Number",
-      "pageNumPos": "Position:"
+      "pageNumPos": "Position:",
+      "authSetting": "Authorization",
+      "requireAuth": "Require Authorization:",
+      "authEnabled": "Enable Authorization",
+      "authParams": "Auth Parameters:",
+      "authParamsPlaceholder": "Comma-separated, e.g. hotelId,deptId"
     },
     "springDS": {
       "title": "Spring Bean Datasource Config",

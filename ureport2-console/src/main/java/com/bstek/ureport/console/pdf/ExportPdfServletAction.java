@@ -88,9 +88,12 @@ public class ExportPdfServletAction extends BaseServletAction{
 				if(reportDefinition==null){
 					throw new ReportDesignException("Report data has expired,can not do export pdf.");
 				}
-				Report report=reportBuilder.buildReport(reportDefinition, parameters);	
+				checkAuth(reportDefinition, req);
+				Report report=reportBuilder.buildReport(reportDefinition, parameters);
 				pdfProducer.produce(report, outputStream);
 			}else{
+				ReportDefinition reportDef=reportRender.getReportDefinition(file);
+				checkAuth(reportDef, req);
 				ExportConfigure configure=new ExportConfigureImpl(file,parameters,outputStream);
 				exportManager.exportPdf(configure);
 			}			

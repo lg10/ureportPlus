@@ -34,6 +34,7 @@ export default class SettingsDialog{
         <li><a href="#__header_footer" data-toggle="tab">${window.i18n.dialog.setting.headerFooterSetting}</a></li>
         <li><a href="#__paging" data-toggle="tab">${window.i18n.dialog.setting.pagingSetting}</a></li>
         <li><a href="#__column" data-toggle="tab">${window.i18n.dialog.setting.columnSetting}</a></li>
+        <li><a href="#__auth_setup" data-toggle="tab">${window.i18n.dialog.setting.authSetting}</a></li>
         </ul>`);
         body.append(tabHeader);
         const tabContent=$(`<div class="tab-content"></div>`);
@@ -46,12 +47,15 @@ export default class SettingsDialog{
         tabContent.append(pagingTab);
         const columnTab=$(`<div class="tab-pane fade" id="__column"></div>`);
         tabContent.append(columnTab);
+        const authTab=$(`<div class="tab-pane fade" id="__auth_setup"></div>`);
+        tabContent.append(authTab);
         //const exportTab=$(`<div class="tab-pane fade" id="__export"></div>`);
         //tabContent.append(exportTab);
         this.initPageSetting(pageTab);
         this.initHeaderFootSetting(headerFooterTab);
         this.initPagingSetting(pagingTab);
         this.initColumnSetting(columnTab);
+        this.initAuthSetting(authTab);
         //this.initExportSetting(exportTab);
     }
     initExportSetting(exportTab){
@@ -546,6 +550,35 @@ export default class SettingsDialog{
             setDirty();
         });
     }
+    initAuthSetting(authTab){
+        const _this=this;
+        const authGroup=$(`<div class="form-group" style="margin-top: 12px;">
+            <label>${window.i18n.dialog.setting.requireAuth}</label>
+        </div>`);
+        authTab.append(authGroup);
+        this.authEnabledCheckbox=$(`<label class="checkbox-inline" style="padding-left: 5px;font-weight: normal">
+            <input type="checkbox"> ${window.i18n.dialog.setting.authEnabled}
+        </label>`);
+        authGroup.append(this.authEnabledCheckbox);
+        this.authEnabledCheckbox.children('input').change(function(){
+            const checked=$(this).prop('checked');
+            _this.authParamsEditor.prop('disabled',!checked);
+            _this.paper.authEnabled=checked;
+            setDirty();
+        });
+        const paramsGroup=$(`<div class="form-group">
+            <label>${window.i18n.dialog.setting.authParams}</label>
+        </div>`);
+        authTab.append(paramsGroup);
+        this.authParamsEditor=$(`<input type="text" class="form-control"
+            style="display: inline-block;width: 300px;"
+            placeholder="${window.i18n.dialog.setting.authParamsPlaceholder}" disabled>`);
+        paramsGroup.append(this.authParamsEditor);
+        this.authParamsEditor.change(function(){
+            _this.paper.authParams=$(this).val();
+            setDirty();
+        });
+    }
     show(context){
         this.context=context;
         this.reportDef=this.context.reportDef;
@@ -618,6 +651,16 @@ export default class SettingsDialog{
         }
         this.pageNumPosSelect.val(this.paper.pageNumPos || 'footer');
         this.pageNumAlignSelect.val(this.paper.pageNumAlign || 'center');
+
+        // 授权配置
+        if(this.paper.authEnabled){
+            this.authEnabledCheckbox.children('input').prop('checked',true);
+            this.authParamsEditor.prop('disabled',false);
+        }else{
+            this.authEnabledCheckbox.children('input').prop('checked',false);
+            this.authParamsEditor.prop('disabled',true);
+        }
+        this.authParamsEditor.val(this.paper.authParams || '');
     }
 }
 function checkGrammar(text,callback){
