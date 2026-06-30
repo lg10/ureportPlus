@@ -43,6 +43,10 @@ export default class URLParameterItemDialog{
                 alert(`${window.i18n.dialog.paramItem.tip}`);
                 return;
             }
+            if(value.indexOf('${')!==-1 || value.indexOf('}')!==-1){
+                alert('URL参数表达式不需要用${}包裹，请直接填写表达式，例如：ds.id 或 id');
+                return;
+            }
             _this.paramItem.name=name;
             _this.paramItem.value=value;
             _this.callback.call(this);

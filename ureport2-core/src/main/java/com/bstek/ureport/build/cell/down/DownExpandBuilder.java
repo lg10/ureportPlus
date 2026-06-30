@@ -70,6 +70,13 @@ public class DownExpandBuilder extends ExpandBuilder {
 			newCell.setFormatData(bindData.getLabel());
 			newCell.setBindData(bindData.getDataList());
 			newCell.setProcessed(true);
+			List<ConditionPropertyItem> items=newCell.getConditionPropertyItems();
+			if(items!=null && items.size()>0){
+				context.getReport().getLazyComputeCells().add(newCell);
+			}else{
+				newCell.doFormat();
+				newCell.doDataWrapCompute(context);
+			}
 			Cell leftParentCell=cell.getLeftParentCell();
 			if(leftParentCell!=null){
 				leftParentCell.addRowChild(newCell);

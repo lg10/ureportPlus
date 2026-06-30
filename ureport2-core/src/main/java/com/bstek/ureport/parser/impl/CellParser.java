@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2017 Bstek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -78,7 +78,7 @@ public class CellParser implements Parser<CellDefinition>{
 		}
 		String expand=element.attributeValue("expand");
 		if(StringUtils.isNotBlank(expand)){
-			cell.setExpand(Expand.valueOf(expand));			
+			cell.setExpand(Expand.valueOf(expand));
 		}
 		String fillBlankRows=element.attributeValue("fill-blank-rows");
 		if(StringUtils.isNotBlank(fillBlankRows)){
@@ -94,8 +94,13 @@ public class CellParser implements Parser<CellDefinition>{
 		if(StringUtils.isNotBlank(linkUrl)){
 			if(linkUrl.startsWith(ExpressionUtils.EXPR_PREFIX) && linkUrl.endsWith(ExpressionUtils.EXPR_SUFFIX)){
 				String expr=linkUrl.substring(2,linkUrl.length()-1);
-				Expression urlExpression=ExpressionUtils.parseExpression(expr);
-				cell.setLinkUrlExpression(urlExpression);
+				try{
+					Expression urlExpression=ExpressionUtils.parseExpression(expr);
+					cell.setLinkUrlExpression(urlExpression);
+				}catch(Exception ex){
+					ex.printStackTrace();
+					System.err.println("Invalid link-url expression: \""+expr+"\", ignored.");
+				}
 			}
 		}
 		List<LinkParameter> linkParameters=null;
@@ -133,11 +138,11 @@ public class CellParser implements Parser<CellDefinition>{
 		}
 		return cell;
 	}
-	
+
 	private Object parseValue(Element element){
 		Parser<?> parser=parsers.get(element.getName());
 		if(parser!=null){
-			return parser.parse(element);			
+			return parser.parse(element);
 		}
 		throw new ReportParseException("Unknow element :"+element.getName());
 	}

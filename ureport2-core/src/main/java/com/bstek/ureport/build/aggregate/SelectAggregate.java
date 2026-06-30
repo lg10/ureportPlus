@@ -53,9 +53,9 @@ public class SelectAggregate extends Aggregate {
 			Object data=Utils.getProperty(o, property);
 			Object mappingData=mappingData(mappingMap,data);
 			if(mappingData==null){
-				list.add(new BindData(data,bindList));				
+				list.add(new BindData(data,bindList));
 			}else{
-				list.add(new BindData(data,mappingData,bindList));								
+				list.add(new BindData(data,mappingData,bindList));
 			}
 		}
 		if(list.size()==0){

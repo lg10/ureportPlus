@@ -275,13 +275,24 @@ public class Cell implements ReportCell {
 			Date d=(Date)data;
 			SimpleDateFormat sd=new SimpleDateFormat(format);
 			formatData=sd.format(d);
+		}else if(data instanceof java.time.temporal.TemporalAccessor){
+			java.time.format.DateTimeFormatter dtf=java.time.format.DateTimeFormatter.ofPattern(format);
+			if(data instanceof java.time.LocalDate){
+				formatData=((java.time.LocalDate)data).format(dtf);
+			}else if(data instanceof java.time.LocalDateTime){
+				formatData=((java.time.LocalDateTime)data).format(dtf);
+			}else if(data instanceof java.time.LocalTime){
+				formatData=((java.time.LocalTime)data).format(dtf);
+			}else{
+				formatData=dtf.format((java.time.temporal.TemporalAccessor)data);
+			}
 		}else{
 			BigDecimal bd=null;
 			try{
-				bd=Utils.toBigDecimal(data);				
+				bd=Utils.toBigDecimal(data);
 			}catch(Exception ex){
 			}
-			if(bd!=null){				
+			if(bd!=null){
 				DecimalFormat df=new DecimalFormat(format);
 				formatData=df.format(bd.doubleValue());
 			}
