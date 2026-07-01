@@ -25,6 +25,9 @@ public class SearchForm {
 	private List<Component> components;
 	private FormPosition formPosition;
 	public String toHtml(RenderContext context){
+		if(components==null || components.isEmpty()){
+			return "";
+		}
 		StringBuilder sb=new StringBuilder();
 		sb.append("<form  style='margin-top:10px;margin-bottom:10px'>");
 		for(Component component:components){
@@ -34,6 +37,9 @@ public class SearchForm {
 		return sb.toString();
 	}
 	public String toJs(RenderContext context){
+		if(components==null || components.isEmpty()){
+			return "";
+		}
 		StringBuilder sb=new StringBuilder();
 		for(Component component:components){
 			sb.append(component.initJs(context));

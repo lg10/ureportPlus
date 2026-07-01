@@ -63,9 +63,9 @@ public class HtmlProducer{
 		}
 		StringBuilder sb=new StringBuilder();
 		if(breakPage){
-			sb.append("<table border='0' class='page-break' style='margin:auto;border-collapse:collapse;width:"+tableWidth+"pt"+bgStyle+"'>");			
+			sb.append("<table border='0' class='page-break' style='margin:auto;border-collapse:collapse;table-layout:fixed;width:"+tableWidth+"pt"+bgStyle+"'>");			
 		}else{
-			sb.append("<table border='0' class='page-break' style='margin:auto;border-collapse:collapse;width:"+tableWidth+"pt"+bgStyle+"'>");			
+			sb.append("<table border='0' class='page-break' style='margin:auto;border-collapse:collapse;table-layout:fixed;width:"+tableWidth+"pt"+bgStyle+"'>");			
 		}
 		sb.append("<tr>");
 		for(int i=0;i<pageSize;i++){
@@ -100,9 +100,9 @@ public class HtmlProducer{
 			bgStyle=";background:url("+bgImage+") no-repeat";
 		}
 		if(breakPage){
-			sb.append("<table class='page-break' border='0' style='margin:auto;border-collapse:collapse;width:"+tableWidth+"pt"+bgStyle+"'>");						
+			sb.append("<table class='page-break' border='0' style='margin:auto;border-collapse:collapse;table-layout:fixed;width:"+tableWidth+"pt"+bgStyle+"'>");						
 		}else{
-			sb.append("<table border='0' style='margin:auto;border-collapse:collapse;width:"+tableWidth+"pt"+bgStyle+"'>");						
+			sb.append("<table border='0' style='margin:auto;border-collapse:collapse;table-layout:fixed;width:"+tableWidth+"pt"+bgStyle+"'>");						
 		}
 		int colSize=columns.size();
 		int rowSize=rows.size();
@@ -147,7 +147,7 @@ public class HtmlProducer{
 					}
 				}
 				sb.append(" class='_"+cell.getName()+"' ");
-				String style=buildCustomStyle(cell);
+				String style=buildCustomStyle(cell,columns,j);
 				sb.append(" "+style+"");
 				sb.append(">");
 				boolean hasLink=false;
@@ -267,7 +267,7 @@ public class HtmlProducer{
 		return height;
 	}
 	
-	private String buildCustomStyle(Cell cell){
+	private String buildCustomStyle(Cell cell,List<Column> columns,int colIndex){
 		CellStyle style=cell.getCustomCellStyle();
 		CellStyle baseStyle=cell.getCellStyle();
 		CellStyle rowStyle=cell.getRow().getCustomCellStyle();
@@ -459,7 +459,13 @@ public class HtmlProducer{
 			sb.append("border-bottom:"+bottomBorder.getStyle().name()+" "+bottomBorder.getWidth()+"px rgb("+bottomBorder.getColor()+");");
 		}
 		if(sb.length()>0){
-			int colWidth=cell.getColumn().getWidth();
+			int colSpan=cell.getColSpan();
+			int colWidth;
+			if(colSpan>0){
+				colWidth=buildWidth(columns,colIndex,colSpan);
+			}else{
+				colWidth=cell.getColumn().getWidth();
+			}
 			sb.append("width:"+colWidth+"pt");
 			sb.insert(0, "style=\"");
 			sb.append("\"");
