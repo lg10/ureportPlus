@@ -19,7 +19,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -28,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringUtils;
+import org.springframework.core.env.Environment;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -39,11 +42,20 @@ public class UReportServlet extends HttpServlet {
 	private static final long serialVersionUID = 533049461276487971L;
 	public static final String URL = "/ureport";
 	private Map<String, ServletAction> actionMap = new HashMap<String, ServletAction>();
+	private boolean disableDesigner = false;
+	private static final Set<String> DESIGNER_URLS = new HashSet<String>();
+	static {
+		DESIGNER_URLS.add("/designer");
+		DESIGNER_URLS.add("/searchFormDesigner");
+		DESIGNER_URLS.add("/console");
+	}
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
 		WebApplicationContext applicationContext = getWebApplicationContext(config);
+		Environment env = applicationContext.getEnvironment();
+		disableDesigner = "true".equals(env.getProperty("ureport.disableDesigner"));
 		Collection<ServletAction> handlers = applicationContext.getBeansOfType(ServletAction.class).values();
 		for (ServletAction handler : handlers) {
 			String url = handler.url();
@@ -69,6 +81,10 @@ public class UReportServlet extends HttpServlet {
 		int slashPos = targetUrl.indexOf("/", 1);
 		if (slashPos > -1) {
 			targetUrl = targetUrl.substring(0, slashPos);
+		}
+		if (disableDesigner && DESIGNER_URLS.contains(targetUrl)) {
+			outContent(resp, "Designer is disabled in production mode.");
+			return;
 		}
 		ServletAction targetHandler = actionMap.get(targetUrl);
 		if (targetHandler == null) {

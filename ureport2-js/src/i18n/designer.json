@@ -569,6 +569,8 @@
       "aggregateType": "聚合方式：",
       "select": "列表",
       "group": "分组",
+      "regroup": "重分组",
+      "reselect": "重选择",
       "customGroup": "自定义分组",
       "sum": "汇总",
       "count": "统计数量",

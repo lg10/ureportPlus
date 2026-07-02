@@ -49,17 +49,19 @@ public class DownDuplocatorWrapper {
 	
 	private void addCellDownDuplicatorToMap(CellDownDuplicator duplicator){
 		Cell leftParentCell=duplicator.getCell().getLeftParentCell();
-		if(leftParentCell.getName().equals(mainCellName)){
+		if(leftParentCell==null || leftParentCell.getName().equals(mainCellName)){
 			mainCellChildren.add(duplicator);
 		}
-		List<CellDownDuplicator> list=null;
-		if(createNewDuplicatorsMap.containsKey(leftParentCell)){
-			list=createNewDuplicatorsMap.get(leftParentCell);
-		}else{
-			list=new ArrayList<CellDownDuplicator>();
-			createNewDuplicatorsMap.put(leftParentCell, list);
+		if(leftParentCell!=null){
+			List<CellDownDuplicator> list=null;
+			if(createNewDuplicatorsMap.containsKey(leftParentCell)){
+				list=createNewDuplicatorsMap.get(leftParentCell);
+			}else{
+				list=new ArrayList<CellDownDuplicator>();
+				createNewDuplicatorsMap.put(leftParentCell, list);
+			}
+			list.add(duplicator);
 		}
-		list.add(duplicator);
 	}
 	
 	public boolean contains(Cell cell){

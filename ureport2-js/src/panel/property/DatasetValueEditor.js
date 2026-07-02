@@ -82,6 +82,8 @@ export default class DatasetValueEditor extends BaseValueEditor{
         this.aggregateSelect=$(`<select class="form-control" style="display: inline-block;width: 143px;font-size: 12px;height: 25px;padding: 3px;">
             <option value="select">${window.i18n.property.dataset.select}</option>
             <option value="group">${window.i18n.property.dataset.group}</option>
+            <option value="regroup">${window.i18n.property.dataset.regroup}</option>
+            <option value="reselect">${window.i18n.property.dataset.reselect}</option>
             <option value="customgroup">${window.i18n.property.dataset.customGroup}</option>
             <option value="sum">${window.i18n.property.dataset.sum}</option>
             <option value="count">${window.i18n.property.dataset.count}</option>
@@ -99,7 +101,7 @@ export default class DatasetValueEditor extends BaseValueEditor{
             }else{
                 customGroupButton.hide();
             }
-            if(value==='group' || value==='select'){
+            if(value==='group' || value==='select' || value==='regroup' || value==='reselect'){
                 _this.mappingGroup.show();
             }else{
                 _this.mappingGroup.hide();

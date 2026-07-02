@@ -18,6 +18,9 @@ package com.bstek.ureport.utils;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.bstek.ureport.Utils;
 import com.bstek.ureport.build.Context;
 import com.bstek.ureport.definition.value.DatasetValue;
@@ -36,6 +39,7 @@ import com.bstek.ureport.model.Cell;
  * @since 2017年6月12日
  */
 public class DataUtils {
+	private static final Logger log = LoggerFactory.getLogger(DataUtils.class);
 	public static List<?> fetchData(Cell cell, Context context,String datasetName) {
 		Cell leftCell=fetchLeftCell(cell, context, datasetName);
 		Cell topCell=fetchTopCell(cell, context, datasetName);
@@ -45,6 +49,12 @@ public class DataUtils {
 		}
 		if(topCell!=null){
 			topList=topCell.getBindData();
+		}
+		if(leftCell!=null || topCell!=null){
+			log.warn("[DEBUG fetchData] cell={}, leftCell={}, topCell={}",
+					cell.getName(),
+					leftCell!=null?leftCell.getName()+":"+leftCell.getData()+":"+(leftList!=null?leftList.size():0):"null",
+					topCell!=null?topCell.getName()+":"+topCell.getData()+":"+(topList!=null?topList.size():0):"null");
 		}
 		if(leftList==null && topList==null){
 			List<?> data=context.getDatasetData(datasetName);
@@ -91,38 +101,38 @@ public class DataUtils {
 		}
 	}
 	public static Cell fetchLeftCell(Cell cell, Context context,String datasetName){
-		Cell targetCell=null;
 		Cell leftCell=cell.getLeftParentCell();
-		if(leftCell!=null){
+		while(leftCell!=null){
 			Value leftCellValue=leftCell.getValue();
 			DatasetExpression leftDSValue=fetchDatasetExpression(leftCellValue);
 			if(leftDSValue!=null){
 				String leftDatasetName=leftDSValue.getDatasetName();
 				if(leftDatasetName.equals(datasetName)){
 					if(leftCell.getBindData()!=null){
-						targetCell=leftCell;					
+						return leftCell;
 					}
 				}
 			}
+			leftCell=leftCell.getLeftParentCell();
 		}
-		return targetCell;
+		return null;
 	}
 	public static Cell fetchTopCell(Cell cell, Context context,String datasetName){
-		Cell targetCell=null;
 		Cell topCell=cell.getTopParentCell();
-		if(topCell!=null){
+		while(topCell!=null){
 			Value topCellValue=topCell.getValue();
 			DatasetExpression leftDSValue=fetchDatasetExpression(topCellValue);
-			if(leftDSValue!=null){				
+			if(leftDSValue!=null){
 				String leftDatasetName=leftDSValue.getDatasetName();
 				if(leftDatasetName.equals(datasetName)){
 					if(topCell.getBindData()!=null){
-						targetCell=topCell;			
+						return topCell;
 					}
 				}
 			}
+			topCell=topCell.getTopParentCell();
 		}
-		return targetCell;
+		return null;
 	}
 	public static DatasetExpression fetchDatasetExpression(Value value){
 		if(value instanceof ExpressionValue){

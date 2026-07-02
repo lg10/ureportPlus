@@ -16,7 +16,9 @@
 package com.bstek.ureport.build;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,7 +58,7 @@ public class Context {
 	private Map<String,Object> parameters;
 	private HideRowColumnBuilder hideRowColumnBuilder;
 	private List<Cell> existPageFunctionCells=new ArrayList<Cell>();
-	private Map<String,List<Cell>> unprocessedCellsMap = new HashMap<String,List<Cell>>();
+	private Map<String,List<Cell>> unprocessedCellsMap = new LinkedHashMap<String,List<Cell>>();
 	private Map<Row,Map<Column,Cell>> blankCellsMap=new HashMap<Row,Map<Column,Cell>>();
 	private Map<Row,Integer> fillBlankRowsMap=new HashMap<Row,Integer>();
 	private Map<String,ChartData> chartDataMap=new HashMap<String,ChartData>();
@@ -69,7 +71,9 @@ public class Context {
 		this.parameters=parameters;
 		this.hideRowColumnBuilder=hideRowColumnBuilder;
 		Map<String,List<Cell>> cellsMap=report.getCellsMap();
-		for(String key:cellsMap.keySet()){
+		List<String> sortedKeys=new ArrayList<String>(cellsMap.keySet());
+		Collections.sort(sortedKeys);
+		for(String key:sortedKeys){
 			if(key.equals(report.getRootCell().getName())){
 				continue;
 			}

@@ -20,12 +20,16 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.bstek.ureport.Utils;
 import com.bstek.ureport.build.cell.CellBuilder;
@@ -65,6 +69,7 @@ public class ReportBuilder extends BasePagination implements ApplicationContextA
 	private Map<Expand,CellBuilder> cellBuildersMap=new HashMap<Expand,CellBuilder>();
 	private NoneExpandBuilder noneExpandBuilder=new NoneExpandBuilder();
 	private HideRowColumnBuilder hideRowColumnBuilder;
+	private static final Logger log = LoggerFactory.getLogger(ReportBuilder.class);
 	public ReportBuilder() {
 		cellBuildersMap.put(Expand.Right,new RightExpandBuilder());
 		cellBuildersMap.put(Expand.Down,new DownExpandBuilder());
@@ -77,12 +82,32 @@ public class ReportBuilder extends BasePagination implements ApplicationContextA
 		long start=System.currentTimeMillis();
 		List<Cell> cells=new ArrayList<Cell>();
 		cells.add(report.getRootCell());
-		do {			
+		int round=0;
+		while(cells!=null){
+			long roundStart=System.currentTimeMillis();
 			buildCell(context,cells);
-			cells = context.nextUnprocessedCells();
-		} while (cells != null);
+			long roundEnd=System.currentTimeMillis();
+			Utils.logToConsole("Build round "+round+", cells:"+cells.size()+", time:"+(roundEnd-roundStart)+"ms");
+			round++;
+			cells=context.nextUnprocessedCells();
+		}
+		log.warn("[DEBUG afterLoop] rounds completed, rows={}", report.getRows().size());
 		doFillBlankRows(report,context);
 		recomputeCells(report,context);
+		try {
+			StringBuilder sb = new StringBuilder("[DEBUG finalRows] ");
+			for(com.bstek.ureport.model.Row r : report.getRows()){
+				com.bstek.ureport.model.Column firstCol = report.getColumns().get(0);
+				java.util.Map<com.bstek.ureport.model.Column, com.bstek.ureport.model.Cell> cm = report.getRowColCellMap().get(r);
+				com.bstek.ureport.model.Cell c = cm!=null ? cm.get(firstCol) : null;
+				sb.append("r").append(r.getRowNumber()).append(":")
+				   .append(c!=null?c.getName():"-").append("=")
+				   .append(c!=null?c.getData():"-").append(" | ");
+			}
+			log.warn(sb.toString());
+		} catch(Exception e) {
+			log.warn("[DEBUG finalRows] error: {}", e.toString());
+		}
 		long end=System.currentTimeMillis();
 		String msg="~~~ Report compute completed:"+(end-start)+"ms";
 		Utils.logToConsole(msg);
@@ -98,6 +123,13 @@ public class ReportBuilder extends BasePagination implements ApplicationContextA
 		}
 		for(Cell cell:cells){
 			List<BindData> dataList=context.buildCellData(cell);
+			if(cell.getRow()!=null && cell.getColumn()!=null){
+			log.warn("[DEBUG buildCell] name={}, row={}, col={}, expand={}, dataSize={}, processed={}, topParent={}, data={}",
+					cell.getName(), cell.getRow().getRowNumber(), cell.getColumn().getColumnNumber(),
+					cell.getExpand(), dataList.size(), cell.isProcessed(),
+					cell.getTopParentCell()!=null?cell.getTopParentCell().getName()+"/"+cell.getTopParentCell().getData():"null",
+					cell.getData());
+			}
 			cell.setProcessed(true);
 			int size=dataList.size();
 			Cell lastCell=cell;

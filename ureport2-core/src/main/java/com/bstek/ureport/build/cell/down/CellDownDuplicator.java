@@ -76,8 +76,12 @@ public class CellDownDuplicator {
 		if(newCell.getLeftParentCell()==originalCell){
 			newCell.setLeftParentCell(leftParent);
 			if(parentNonChild){
-				nonChild=true;				
+				nonChild=true;
 			}
+		}else if(newCell.getTopParentCell()==originalCell){
+			// 列子格（通过上父格关联），更新上父格指向新的分组实例
+			// 左父格保持不变（列子格可能没有左父格或左父格为同行的其他单元格）
+			newCell.setTopParentCell(leftParent);
 		}else{
 			nonChild=true;
 		}

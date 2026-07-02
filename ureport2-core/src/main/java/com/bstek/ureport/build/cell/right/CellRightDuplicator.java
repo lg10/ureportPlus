@@ -96,8 +96,12 @@ public class CellRightDuplicator {
 		if(newCell.getTopParentCell()==originalCell){
 			newCell.setTopParentCell(topParent);
 			if(parentNonChild){
-				nonChild=true;				
+				nonChild=true;
 			}
+		}else if(newCell.getLeftParentCell()==originalCell){
+			// 行子格（通过左父格关联），更新左父格指向新的分组实例
+			// 上父格保持不变
+			newCell.setLeftParentCell(topParent);
 		}else{
 			nonChild=true;
 		}

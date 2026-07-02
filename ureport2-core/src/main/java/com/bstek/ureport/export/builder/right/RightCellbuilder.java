@@ -33,7 +33,15 @@ public class RightCellbuilder {
 		List<Range> rangeList=topParentCellCreator.buildParentCells(cell);
 		Range childRange=buildChildrenCells(cell,rangeList);
 		buildChildrenBlankCells(cell,cells,childRange);
+		Range rowChildRange=buildRowChildrenCells(cell,rangeList);
+		buildRowChildrenBlankCells(cell,cells,rowChildRange);
 		Range colRange=buildColumnRange(rangeList);
+		if(rowChildRange.getStart()!=-1 && (colRange.getStart()==-1 || rowChildRange.getStart()<colRange.getStart())){
+			colRange.setStart(rowChildRange.getStart());
+		}
+		if(rowChildRange.getEnd()>colRange.getEnd()){
+			colRange.setEnd(rowChildRange.getEnd());
+		}
 		buildColumnsBlankCells(cell,cells,colRange);
 		int start=colRange.getStart(),end=colRange.getEnd();
 		int colNumberStart=cell.getColumnNumber(),colNumberEnd=cell.getColumnNumber();
@@ -118,6 +126,64 @@ public class RightCellbuilder {
 			}
 		}
 		return range;
+	}
+
+	/**
+	 * 处理当前单元格的行子格（右侧同行的子单元格），将它们加入newCellNames，
+	 * 使得向右展开时这些子格所在的列也会被复制，从而支持列级分组。
+	 */
+	private Range buildRowChildrenCells(CellDefinition cell,List<Range> rangeList){
+		Range range=new Range();
+		List<CellDefinition> rowChildrenCells=cell.getRowChildrenCells();
+		for(CellDefinition childCell:rowChildrenCells){
+			String childName=childCell.getName();
+			if(!cell.getNewCellNames().contains(childName)){
+				cell.getNewCellNames().add(childName);
+			}
+			int colNumber=childCell.getColumnNumber();
+			int endColNumber=BuildUtils.buildColNumberEnd(childCell, colNumber);
+			rangeList.add(new Range(colNumber,endColNumber));
+			if(endColNumber>range.getEnd()){
+				range.setEnd(endColNumber);
+			}
+			if(range.getStart()==-1 || colNumber<range.getStart()){
+				range.setStart(colNumber);
+			}
+		}
+		return range;
+	}
+
+	/**
+	 * 处理行子格范围内的空白单元格
+	 */
+	private void buildRowChildrenBlankCells(CellDefinition cell,List<CellDefinition> cells,Range childRange){
+		int startColNumber=cell.getColumnNumber();
+		int endColNumber=BuildUtils.buildColNumberEnd(cell, startColNumber);
+		int start=childRange.getStart(),end=childRange.getEnd();
+		if(start!=-1 && start<startColNumber){
+			startColNumber=start;
+		}
+		if(end>endColNumber){
+			endColNumber=end;
+		}
+		Map<String,BlankCellInfo> blankCellNamesMap=cell.getNewBlankCellsMap();
+		for(int i=startColNumber;i<=endColNumber;i++){
+			for(CellDefinition c : cells){
+				if(c.getColumnNumber()!=i){
+					continue;
+				}
+				if(c.equals(cell)){
+					continue;
+				}
+				String name=c.getName();
+				boolean contain=cellPrcessed(cell,name);
+				if(contain){
+					continue;
+				}
+				int offset=c.getColumnNumber()-cell.getColumnNumber();
+				blankCellNamesMap.put(name, new BlankCellInfo(offset,c.getColSpan(),false));
+			}
+		}
 	}
 	
 	

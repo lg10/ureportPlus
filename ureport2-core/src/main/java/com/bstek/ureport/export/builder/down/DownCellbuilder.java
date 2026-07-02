@@ -33,7 +33,15 @@ public class DownCellbuilder {
 		List<Range> rangeList=leftParentCellCreator.buildParentCells(cell);
 		Range childRange=buildChildrenCells(cell,rangeList);
 		buildChildrenBlankCells(cell,cells,childRange);
+		Range columnChildRange=buildColumnChildrenCells(cell,rangeList);
+		buildColumnChildrenBlankCells(cell,cells,columnChildRange);
 		Range rowRange=buildRowRange(rangeList);
+		if(columnChildRange.getStart()!=-1 && (rowRange.getStart()==-1 || columnChildRange.getStart()<rowRange.getStart())){
+			rowRange.setStart(columnChildRange.getStart());
+		}
+		if(columnChildRange.getEnd()>rowRange.getEnd()){
+			rowRange.setEnd(columnChildRange.getEnd());
+		}
 		buildRowsBlankCells(cell,cells,rowRange);
 		int start=rowRange.getStart(),end=rowRange.getEnd();
 		int rowNumberStart=cell.getRowNumber(),rowNumberEnd=cell.getRowNumber();
@@ -118,6 +126,64 @@ public class DownCellbuilder {
 			}
 		}
 		return range;
+	}
+
+	/**
+	 * 处理当前单元格的列子格（下方同列的子单元格），将它们加入newCellNames，
+	 * 使得向下展开时这些子格所在的行也会被复制，从而支持行级分组。
+	 */
+	private Range buildColumnChildrenCells(CellDefinition cell,List<Range> rangeList){
+		Range range=new Range();
+		List<CellDefinition> columnChildrenCells=cell.getColumnChildrenCells();
+		for(CellDefinition childCell:columnChildrenCells){
+			String childName=childCell.getName();
+			if(!cell.getNewCellNames().contains(childName)){
+				cell.getNewCellNames().add(childName);
+			}
+			int rowNumber=childCell.getRowNumber();
+			int endRowNumber=BuildUtils.buildRowNumberEnd(childCell, rowNumber);
+			rangeList.add(new Range(rowNumber,endRowNumber));
+			if(endRowNumber>range.getEnd()){
+				range.setEnd(endRowNumber);
+			}
+			if(range.getStart()==-1 || rowNumber<range.getStart()){
+				range.setStart(rowNumber);
+			}
+		}
+		return range;
+	}
+
+	/**
+	 * 处理列子格范围内的空白单元格
+	 */
+	private void buildColumnChildrenBlankCells(CellDefinition cell,List<CellDefinition> cells,Range childRange){
+		int startRowNumber=cell.getRowNumber();
+		int endRowNumber=BuildUtils.buildRowNumberEnd(cell, startRowNumber);
+		int start=childRange.getStart(),end=childRange.getEnd();
+		if(start!=-1 && start<startRowNumber){
+			startRowNumber=start;
+		}
+		if(end>endRowNumber){
+			endRowNumber=end;
+		}
+		Map<String,BlankCellInfo> blankCellNamesMap=cell.getNewBlankCellsMap();
+		for(int i=startRowNumber;i<=endRowNumber;i++){
+			for(CellDefinition c : cells){
+				if(c.getRowNumber()!=i){
+					continue;
+				}
+				if(c.equals(cell)){
+					continue;
+				}
+				String name=c.getName();
+				boolean contain=cellPrcessed(cell,name);
+				if(contain){
+					continue;
+				}
+				int offset=c.getRowNumber()-cell.getRowNumber();
+				blankCellNamesMap.put(name, new BlankCellInfo(offset,c.getRowSpan(),false));
+			}
+		}
 	}
 	
 	

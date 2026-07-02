@@ -569,6 +569,8 @@
       "aggregateType": "Aggregate Type",
       "select": "Select",
       "group": "Group",
+      "regroup": "Regroup",
+      "reselect": "Reselect",
       "customGroup": "Custom Group",
       "sum": "Sum",
       "count": "Count",

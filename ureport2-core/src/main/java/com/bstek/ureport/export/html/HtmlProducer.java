@@ -104,6 +104,11 @@ public class HtmlProducer{
 		}else{
 			sb.append("<table border='0' style='margin:auto;border-collapse:collapse;table-layout:fixed;width:"+tableWidth+"pt"+bgStyle+"'>");						
 		}
+		sb.append("<colgroup>");
+		for(Column col:columns){
+			sb.append("<col style=\"width:"+col.getWidth()+"pt\">");
+		}
+		sb.append("</colgroup>");
 		int colSize=columns.size();
 		int rowSize=rows.size();
 		for(int i=0;i<rowSize;i++){
@@ -249,7 +254,7 @@ public class HtmlProducer{
 	
 	private int buildWidth(List<Column> columns,int colIndex,int colSpan){
 		int width=0;
-		int start=colIndex,end=colIndex+colSpan;
+		int start=colIndex,end=Math.min(colIndex+colSpan,columns.size());
 		for(int i=start;i<end;i++){
 			Column col=columns.get(i);
 			width+=col.getWidth();

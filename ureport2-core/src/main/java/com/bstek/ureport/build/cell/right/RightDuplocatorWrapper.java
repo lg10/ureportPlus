@@ -48,17 +48,19 @@ public class RightDuplocatorWrapper {
 	
 	private void addCellRightDuplicatorToMap(CellRightDuplicator duplicator){
 		Cell topParentCell=duplicator.getCell().getTopParentCell();
-		if(topParentCell.getName().equals(mainCellName)){
+		if(topParentCell==null || topParentCell.getName().equals(mainCellName)){
 			mainCellChildren.add(duplicator);
 		}
-		List<CellRightDuplicator> list=null;
-		if(createNewDuplicatorsMap.containsKey(topParentCell)){
-			list=createNewDuplicatorsMap.get(topParentCell);
-		}else{
-			list=new ArrayList<CellRightDuplicator>();
-			createNewDuplicatorsMap.put(topParentCell, list);
+		if(topParentCell!=null){
+			List<CellRightDuplicator> list=null;
+			if(createNewDuplicatorsMap.containsKey(topParentCell)){
+				list=createNewDuplicatorsMap.get(topParentCell);
+			}else{
+				list=new ArrayList<CellRightDuplicator>();
+				createNewDuplicatorsMap.put(topParentCell, list);
+			}
+			list.add(duplicator);
 		}
-		list.add(duplicator);
 	}
 	
 	public boolean contains(Cell cell){

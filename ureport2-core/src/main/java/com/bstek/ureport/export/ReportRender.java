@@ -18,6 +18,7 @@ package com.bstek.ureport.export;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -114,22 +115,38 @@ public class ReportRender implements ApplicationContextAware{
 	}
 	
 	private void addRowChildCell(CellDefinition cell,CellDefinition childCell){
+		addRowChildCell(cell,childCell,new HashSet<String>());
+	}
+	private void addRowChildCell(CellDefinition cell,CellDefinition childCell,HashSet<String> visited){
 		CellDefinition leftCell=cell.getLeftParentCell();
 		if(leftCell==null){
 			return;
 		}
+		String name=leftCell.getName();
+		if(visited.contains(name)){
+			throw new com.bstek.ureport.exception.ReportException("Circular left-parent-cell reference detected at cell ["+name+"].");
+		}
+		visited.add(name);
 		List<CellDefinition> childrenCells=leftCell.getRowChildrenCells();
 		childrenCells.add(childCell);
-		addRowChildCell(leftCell,childCell);
+		addRowChildCell(leftCell,childCell,visited);
 	}
 	private void addColumnChildCell(CellDefinition cell,CellDefinition childCell){
+		addColumnChildCell(cell,childCell,new HashSet<String>());
+	}
+	private void addColumnChildCell(CellDefinition cell,CellDefinition childCell,HashSet<String> visited){
 		CellDefinition topCell=cell.getTopParentCell();
 		if(topCell==null){
 			return;
 		}
+		String name=topCell.getName();
+		if(visited.contains(name)){
+			throw new com.bstek.ureport.exception.ReportException("Circular top-parent-cell reference detected at cell ["+name+"].");
+		}
+		visited.add(name);
 		List<CellDefinition> childrenCells=topCell.getColumnChildrenCells();
 		childrenCells.add(childCell);
-		addColumnChildCell(topCell,childCell);
+		addColumnChildCell(topCell,childCell,visited);
 	}
 	public void setReportParser(ReportParser reportParser) {
 		this.reportParser = reportParser;
