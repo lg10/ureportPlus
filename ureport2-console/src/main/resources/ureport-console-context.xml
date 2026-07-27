@@ -57,4 +57,7 @@
 	<bean id="ureport.httpSessionReportCache" class="com.kingint.ureport.console.cache.HttpSessionReportCache">
 		<property name="disabled" value="${ureport.disableHttpSessionReportCache}"></property>
 	</bean>
+
+	<bean id="ureport.exampleInitializer" class="com.kingint.ureport.console.ExampleInitializer"/>
+
 </beans>
