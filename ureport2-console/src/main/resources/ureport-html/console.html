@@ -131,5 +131,28 @@
     </div>
 
 </div>
+
+	<!-- 示例报表 -->
+	<div style="max-width:960px;margin:0 auto 20px">
+		<h4 style="color:#555;font-size:15px;margin-bottom:12px">
+			<span class="glyphicon glyphicon-book" style="color:#f59e0b;margin-right:6px"></span>示例报表
+			<small style="color:#999;font-weight:400;margin-left:8px">内置示例，双击可编辑查看XML结构</small>
+		</h4>
+		<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">
+			#foreach($example in $examples)
+			<div style="background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.06);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-left:3px solid #f59e0b">
+				<div>
+					<div style="font-size:13px;color:#333;font-weight:500">$example.name</div>
+					<div style="font-size:11px;color:#999;margin-top:2px">$example.desc</div>
+				</div>
+				<div style="display:flex;gap:4px;flex-shrink:0;margin-left:12px">
+					<a href="${contextPath}/ureport/preview?_u=$example.file" class="btn btn-xs btn-info" target="_blank">预览</a>
+					<a href="${contextPath}/ureport/designer?_u=$example.file" class="btn btn-xs btn-default" target="_blank">编辑</a>
+				</div>
+			</div>
+			#end
+		</div>
+	</div>
+
 </body>
 </html>

@@ -4,13 +4,13 @@
   <parent>
   	<groupId>com.kingint.ureport</groupId>
   	<artifactId>ureport2-parent</artifactId>
-  	<version>2.6.3</version>
+  	<version>2.7.1</version>
   </parent>
   <dependencies>
   	<dependency>
   		<groupId>com.kingint.ureport</groupId>
   		<artifactId>ureport2-core</artifactId>
-  		<version>2.6.3</version>
+  		<version>2.7.1</version>
   	</dependency>
   </dependencies>
 	<licenses>
@@ -22,9 +22,9 @@
 	<developers>
 		<developer>
 			<name>Gaojie</name>
-			<email>jacky.gao@bstek.com</email>
-			<organization>Bstek</organization>
-			<organizationUrl>http://www.bstek.com</organizationUrl>
+			<email>jacky.gao@kingint.com</email>
+			<organization>KinginT</organization>
+			<organizationUrl>http://www.kingint.com</organizationUrl>
 		</developer>
 	</developers>
 	<scm>
@@ -34,7 +34,7 @@
 	</scm>
 	<organization>
 		<name>Bstek</name>
-		<url>http://www.bstek.com</url>
+		<url>http://www.kingint.com</url>
 	</organization>
 	<name>UReport2 Font Project</name>
 	<url>https://github.com/youseries/ureport/tree/master/ureport2-font</url>

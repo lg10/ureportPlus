@@ -51,6 +51,8 @@
 	<bean id="ureport.consoleServletAction" class="com.kingint.ureport.console.ConsoleServletAction"></bean>
 	<bean id="ureport.versionServletAction" class="com.kingint.ureport.console.version.VersionServletAction"></bean>
 	<bean id="ureport.chartServletAction" class="com.kingint.ureport.console.chart.ChartServletAction"></bean>
+	<bean id="ureport.aiServletAction" class="com.kingint.ureport.console.ai.AiServletAction"></bean>
+	<bean id="ureport.loginServletAction" class="com.kingint.ureport.console.auth.LoginServletAction"></bean>
 	
 	<bean id="ureport.httpSessionReportCache" class="com.kingint.ureport.console.cache.HttpSessionReportCache">
 		<property name="disabled" value="${ureport.disableHttpSessionReportCache}"></property>

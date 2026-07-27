@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>ureport2-core</artifactId>
-	<version>2.6.3</version>
+	<version>2.7.1</version>
 	<parent>
 		<groupId>com.kingint.ureport</groupId>
 		<artifactId>ureport2-parent</artifactId>
-		<version>2.6.3</version>
+		<version>2.7.1</version>
 	</parent>
 	<dependencies>
 		<dependency>
@@ -99,9 +99,9 @@
 	<developers>
 		<developer>
 			<name>Gaojie</name>
-			<email>jacky.gao@bstek.com</email>
-			<organization>Bstek</organization>
-			<organizationUrl>http://www.bstek.com</organizationUrl>
+			<email>jacky.gao@kingint.com</email>
+			<organization>KinginT</organization>
+			<organizationUrl>http://www.kingint.com</organizationUrl>
 		</developer>
 	</developers>
 	<scm>
@@ -112,7 +112,7 @@
   </scm>
 	<organization>
 		<name>Bstek</name>
-		<url>http://www.bstek.com</url>
+		<url>http://www.kingint.com</url>
 	</organization>	
 	<properties>
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>

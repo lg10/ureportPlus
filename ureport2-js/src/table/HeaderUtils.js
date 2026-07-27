@@ -18,6 +18,8 @@ export function renderRowHeader(hot,context){
                     type=`<span style='color:#d30a16;font-size: 10px' title='${window.i18n.table.header.t}'>T</span>`;
                 }else if(header.band==='summary'){
                     type=`<span style='color:#d30a16;font-size: 10px' title='${window.i18n.table.header.s}'>S</span>`;
+                }else if(header.band==='subtotal'){
+                    type=`<span style='color:#0e90d2;font-size: 10px' title='小计行：每个分组下方出现'>计</span>`;
                 }
                 break;
             }

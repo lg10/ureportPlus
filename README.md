@@ -22,7 +22,7 @@ Firstly, we need to create a standard Maven project \(create a project with Ecli
 
 ```
 <dependency>
-    <groupId>com.bstek.ureport</groupId>
+    <groupId>com.kingint.ureport</groupId>
     <artifactId>ureport2-console</artifactId>
     <version>[version]</version>
 </dependency>
@@ -44,7 +44,7 @@ Then, we need to configure the servlet that will be used by UReport2. Open the w
 ```
 <servlet>
     <servlet-name>ureportServlet</servlet-name>
-    <servlet-class>com.bstek.ureport.console.UReportServlet</servlet-class>
+    <servlet-class>com.kingint.ureport.console.UReportServlet</servlet-class>
 </servlet>
 <servlet-mapping>
     <servlet-name>ureportServlet</servlet-name>

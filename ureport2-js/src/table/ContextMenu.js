@@ -98,6 +98,15 @@ export default function buildMenuConfigure(){
                 }
                 renderRowHeader(this,context);
                 setDirty();
+            }else if(key==='subtotal_row'){
+                const selected=this.getSelected();
+                const startRow=selected[0],endRow=selected[2];
+                const context=this.context;
+                for(let rowNumber=startRow;rowNumber<=endRow;rowNumber++){
+                    context.addRowHeader(rowNumber,'subtotal');
+                }
+                renderRowHeader(this,context);
+                setDirty();
             }else if(key==='repeat_cancel'){
                 const selected=this.getSelected();
                 const startRow=selected[0],endRow=selected[2];
@@ -135,6 +144,23 @@ export default function buildMenuConfigure(){
                     });
                 },colWidth,true);
                 setDirty();
+            }else if(key==='ai_assist'){
+                const selected=this.getSelected();
+                let cellNames=[];
+                if(selected && selected.length>0){
+                    const startRow=selected[0],endRow=selected[2],startCol=selected[1],endCol=selected[3];
+                    for(let r=startRow;r<=endRow;r++){
+                        for(let c=startCol;c<=endCol;c++){
+                            const name=this.context.getCellName(r,c);
+                            if(name) cellNames.push(name);
+                        }
+                    }
+                }
+                // Open AI chat panel with cell context
+                if(window._designer && window._designer.aiChatPanel){
+                    const prompt='请修改单元格 ' + cellNames.join(', ');
+                    window._designer.aiChatPanel.openWithPrompt(prompt);
+                }
             }else if(key==='copy_style'){
                 const selected=this.getSelected();
                 const startRow=selected[0],endRow=selected[2],startCol=selected[1],endCol=selected[3];
@@ -207,6 +233,10 @@ export default function buildMenuConfigure(){
                 name: `<i class="ureport ureport-summary" style="color: #9C27B0;font-size: 13px"></i>  ${window.i18n.table.contextMenu.summary}`,
                 disabled:checkRowDeleteOperationDisabled
             },
+            "subtotal_row": {
+                name: `<i class="ureport ureport-summary" style="color: #0e90d2;font-size: 13px"></i>  ${window.i18n.table.contextMenu.subtotal}`,
+                disabled:checkRowDeleteOperationDisabled
+            },
             "repeat_cancel": {
                 name: `<i class="glyphicon glyphicon-remove-circle" style="color: #d30e00;font-size: 13px"></i>  ${window.i18n.table.contextMenu.cancel}`,
                 disabled:checkRowDeleteOperationDisabled
@@ -226,6 +256,10 @@ export default function buildMenuConfigure(){
             "clean_style": {
                 name: `<i class="ureport ureport-clean-style" style="color: #00746f;font-size: 13px"></i>  ${window.i18n.table.contextMenu.clearStyle}`,
                 disabled:checkCleanOperationDisabled
+            },
+            "ai_assist": {
+                name: `<i class="glyphicon glyphicon-flash" style="color: #2563eb;font-size: 13px"></i>  ${window.i18n.table.contextMenu.aiAssist}`,
+                disabled: checkCleanOperationDisabled
             },
             "clean": {
                 name: `<i class="ureport ureport-clean" style="color: #d30e00;font-size: 13px"></i>  ${window.i18n.table.contextMenu.clearAll}`,
@@ -360,7 +394,7 @@ export default function buildMenuConfigure(){
                     hot.setDataAtCell(i,j,'');
                 }else if(type==='style'){
                     removeCellsMap.set(key,cell.cellStyle);
-                    cell.cellStyle={fontSize:9,forecolor:'0,0,0',fontFamily:'宋体',align:'center',valign:'middle'};
+                    cell.cellStyle={fontSize:9,forecolor:'0,0,0',fontFamily:'宋体',align:'center',valign:'top'};
                 }else if(type==='all'){
                     context.removeCell(cell);
                     removeCellsMap.set(key,cell);
@@ -372,7 +406,7 @@ export default function buildMenuConfigure(){
                             type:'simple',
                             value:''
                         },
-                        cellStyle:{fontSize:9,forecolor:'0,0,0',fontFamily:'宋体',align:'center',valign:'middle'}
+                        cellStyle:{fontSize:9,forecolor:'0,0,0',fontFamily:'宋体',align:'center',valign:'top'}
                     };
                     context.addCell(newCell);
                     hot.setDataAtCell(i,j,'');

@@ -4,6 +4,7 @@
 import * as utils from '../Utils.js';
 import {afterRenderer} from './CellRenderer.js';
 import buildMenuConfigure from './ContextMenu.js';
+import CellEditor from './CellEditor.js';
 import Handsontable from 'handsontable';
 
 export default class ReportTable{
@@ -179,9 +180,14 @@ export default class ReportTable{
         this.hot.updateSettings({
             colWidths,
             rowHeights,
-            mergeCells,
-            readOnly:true
+            mergeCells
         });
+
+        // Enable inline cell editing for simple text cells
+        if (!this.cellEditor) {
+            this.cellEditor = new CellEditor(this);
+            this.cellEditor.init();
+        }
     }
 
     buildMenu(){

@@ -8,7 +8,7 @@ export default class Tool{
         this.context=context;
     }
     buildButton(){
-        const btn=$(`<button type="button" class="btn btn-default" style="border:none;border-radius:0;background: #f8f8f8;padding: 6px 5px;" title="${this.getTitle()}">
+        const btn=$(`<button type="button" class="ud-toolbar-btn" title="${this.getTitle()}">
              ${this.getIcon()}
         </button>`);
         const _this=this;

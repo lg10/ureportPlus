@@ -93,6 +93,7 @@ public class ReportBuilder extends BasePagination implements ApplicationContextA
 		}
 		log.warn("[DEBUG afterLoop] rounds completed, rows={}", report.getRows().size());
 		doFillBlankRows(report,context);
+		SubtotalBuilder.build(report,context);
 		recomputeCells(report,context);
 		try {
 			StringBuilder sb = new StringBuilder("[DEBUG finalRows] ");
@@ -395,8 +396,10 @@ public class ReportBuilder extends BasePagination implements ApplicationContextA
 						}
 						pageRepeatFooters.remove(index);
 						pageRepeatFooters.add(index,row);
-					} 
-					continue;
+					}
+					if(!Band.subtotal.equals(band)){
+						continue;
+					}
 				}
 				rowHeight+=rowRealHeight+1;
 				pageRows.add(row);
@@ -461,7 +464,9 @@ public class ReportBuilder extends BasePagination implements ApplicationContextA
 						pageRepeatFooters.remove(index);
 						pageRepeatFooters.add(index,row);
 					}
-					continue;
+					if(!Band.subtotal.equals(band)){
+						continue;
+					}
 				}
 				row.setPageIndex(pageIndex);
 				pageRows.add(row);

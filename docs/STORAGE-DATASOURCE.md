@@ -32,10 +32,10 @@ ureport.fileStoreDir=D:/ureportfiles
 
 It means to save the report files in the directory ureportfiles under the Drive D. It shall be noted that when the specific directory is assigned, we shall save the directory and assure its existence, otherwise it will not be adopted. For an instance, the directory named ureportfiles in Drive D must exist and needs to be created in advance.
 
-The report storage mechanism known as the “server file system” provided by UReport2 by fault actually realizes the interface of com.bstek.ureport.provider.report.Report Provider provided by UReport2. The source code of the interface is as follows:
+The report storage mechanism known as the “server file system” provided by UReport2 by fault actually realizes the interface of com.kingint.ureport.provider.report.Report Provider provided by UReport2. The source code of the interface is as follows:
 
 ```
-package com.bstek.ureport.provider.report; import  java.io.InputStream;
+package com.kingint.ureport.provider.report; import  java.io.InputStream;
 import java.util.List;
 /**
 *  @author  Jacky.gao
@@ -96,7 +96,7 @@ String getPrefix();
 After realizing the ReportProvider interface, configure the implementation class to Spring and make it a standard Spring Bean. Then UReport2 will detect, find and load it. The source code of the report storage known as the “server file system” provided by UReport2 by default is listed below:
 
 ```
-package com.bstek.ureport.provider.report.file;
+package com.kingint.ureport.provider.report.file;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -118,9 +118,9 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.web.context.WebApplicationContext;
 
-import com.bstek.ureport.exception.ReportException;
-import com.bstek.ureport.provider.report.ReportFile;
-import com.bstek.ureport.provider.report.ReportProvider;
+import com.kingint.ureport.exception.ReportException;
+import com.kingint.ureport.provider.report.ReportFile;
+import com.kingint.ureport.provider.report.ReportProvider;
 
 /**
  * @author Jacky.gao
@@ -250,7 +250,7 @@ Open the report designer in UReport2. We can see three types of data sources of 
 
 ![](docs/images/datasource-tools.png)![](/docs/images/datasource-tools.png)
 
-The three types of data sources are respectively directly connected with the database, Spring Bean and the built-in data soure that is provided through com.bstek.ureport.definition.datasource.BuildinDatasource interface.
+The three types of data sources are respectively directly connected with the database, Spring Bean and the built-in data soure that is provided through com.kingint.ureport.definition.datasource.BuildinDatasource interface.
 
 It is very simple to connect with the database. Add the Jar package driven by the corresponding database in classpath of the project and configure the information on connection with the data source in the pop-up window, as shown in the figure below:![](/docs/images/db-config.png)The data source of Spring Bean type can choose a Bean defined in the context of Spring, click the icon and enter the name of data source and the ID of Bean to be applied in the pop-up window, as shown in the figure below:
 
@@ -294,7 +294,7 @@ In the above example, the set of User object is returned. The User object here i
 This type of data source requires realizing the BuildinDatasource interface and configuring the implementation class of BuildinDatasource interface to Spring. The source code of BuildinDatasource interface is listed below:
 
 ```
-package com.bstek.ureport.definition.datasource;
+package com.kingint.ureport.definition.datasource;
 
 import java.sql.Connection;
 

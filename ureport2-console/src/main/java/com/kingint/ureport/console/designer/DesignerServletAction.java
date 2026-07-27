@@ -38,6 +38,7 @@ import org.springframework.context.ApplicationContext;
 
 import com.kingint.ureport.cache.CacheUtils;
 import com.kingint.ureport.console.RenderPageServletAction;
+import com.kingint.ureport.console.auth.ConsoleAuthService;
 import com.kingint.ureport.console.cache.TempObjectCache;
 import com.kingint.ureport.console.exception.ReportDesignException;
 import com.kingint.ureport.definition.ReportDefinition;
@@ -64,6 +65,10 @@ public class DesignerServletAction extends RenderPageServletAction {
 		if(method!=null){
 			invokeMethod(method, req, resp);
 		}else{
+			if (!ConsoleAuthService.getInstance().isAuthenticated(req)) {
+				resp.sendRedirect(req.getContextPath() + "/ureport/login");
+				return;
+			}
 			VelocityContext context = new VelocityContext();
 			context.put("contextPath", req.getContextPath());
 			resp.setContentType("text/html");

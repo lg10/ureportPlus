@@ -7,6 +7,7 @@ import '../node_modules/bootstrap-colorpicker/dist/css/bootstrap-colorpicker.min
 import '../node_modules/codemirror/lib/codemirror.css';
 import '../node_modules/codemirror/addon/hint/show-hint.css';
 import '../node_modules/codemirror/addon/lint/lint.css';
+import '../css/theme.css';
 import '../css/iconfont.css';
 import '../css/designer.css';
 import './tree/css/tree.css';

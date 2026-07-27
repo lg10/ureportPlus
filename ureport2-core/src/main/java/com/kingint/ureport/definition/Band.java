@@ -20,5 +20,5 @@ package com.kingint.ureport.definition;
  * @since 2017年1月16日
  */
 public enum Band {
-	headerrepeat,footerrepeat,title,summary
+	headerrepeat,footerrepeat,title,summary,subtotal
 }

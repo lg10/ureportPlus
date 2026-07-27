@@ -1,0 +1,349 @@
+/* ============================================================
+ * UReport2 Modern Light Theme — Design Tokens & Global Overrides
+ * ============================================================ */
+
+:root {
+  /* ---- Brand / Primary ---- */
+  --color-primary:       #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: #eff6ff;
+  --color-primary-bg:    #dbeafe;
+
+  /* ---- Neutrals ---- */
+  --color-bg:               #ffffff;
+  --color-bg-secondary:     #f8fafc;
+  --color-bg-tertiary:      #f1f5f9;
+  --color-bg-hover:         #e2e8f0;
+  --color-border:           #e2e8f0;
+  --color-border-light:     #f1f5f9;
+  --color-border-strong:    #cbd5e1;
+
+  /* ---- Text ---- */
+  --color-text:          #0f172a;
+  --color-text-secondary:#475569;
+  --color-text-muted:    #94a3b8;
+
+  /* ---- Semantic ---- */
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger:  #dc2626;
+
+  /* ---- Radii ---- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* ---- Shadows ---- */
+  --shadow-xs: 0 1px 2px  rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px  rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 6px  -1px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+
+  /* ---- Spacing ---- */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  12px;
+  --space-lg:  16px;
+  --space-xl:  24px;
+
+  /* ---- Typography ---- */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-size-xs:   11px;
+  --font-size-sm:   12px;
+  --font-size-base: 13px;
+  --font-size-lg:   14px;
+
+  /* ---- Transitions ---- */
+  --transition-fast: 120ms ease;
+  --transition-base: 180ms ease;
+}
+
+/* ============================================================
+ * Global Reset
+ * ============================================================ */
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background: var(--color-bg-secondary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+ * Bootstrap 3 Overrides — Buttons
+ * ============================================================ */
+.btn {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 5px 12px;
+  transition: all var(--transition-fast);
+  outline: none !important;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.btn-default {
+  color: var(--color-text);
+  background: var(--color-bg);
+  border-color: var(--color-border);
+}
+.btn-default:hover,
+.btn-default:focus,
+.btn-default:active,
+.btn-default.active {
+  color: var(--color-text);
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-xs);
+}
+.btn-default:active,
+.btn-default.active {
+  background: var(--color-bg-hover);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.btn-primary {
+  color: #fff;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.btn-primary:hover,
+.btn-primary:focus {
+  color: #fff;
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-sm {
+  font-size: var(--font-size-xs);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-xs {
+  font-size: var(--font-size-xs);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Dropdown buttons ---- */
+.btn-group > .btn + .dropdown-toggle {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.btn-group > .btn:first-child:not(:last-child) {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+.btn-group > .btn:last-child:not(:first-child) {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+.open > .dropdown-toggle.btn-default {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border-strong);
+}
+
+/* ---- Bootstrap dropdown menus ---- */
+.dropdown-menu {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-xs) 0;
+}
+.dropdown-menu > li > a {
+  padding: 6px 16px;
+  color: var(--color-text);
+  transition: background var(--transition-fast);
+}
+.dropdown-menu > li > a:hover,
+.dropdown-menu > li > a:focus {
+  color: var(--color-text);
+  background: var(--color-bg-tertiary);
+}
+
+/* ============================================================
+ * Bootstrap 3 Overrides — Forms
+ * ============================================================ */
+.form-control {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 6px 10px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  box-shadow: none;
+  transition: border-color var(--transition-fast),
+              box-shadow var(--transition-fast);
+  height: auto;
+}
+.form-control:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.12);
+  outline: none;
+}
+select.form-control {
+  padding-right: 24px;
+}
+textarea.form-control {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  resize: vertical;
+  min-height: 60px;
+}
+label {
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+/* ============================================================
+ * Bootstrap 3 Overrides — Nav tabs
+ * ============================================================ */
+.nav-tabs {
+  border-bottom: 1px solid var(--color-border);
+}
+.nav-tabs > li > a {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border: none;
+  padding: 8px 14px;
+  margin-right: 2px;
+  transition: all var(--transition-fast);
+}
+.nav-tabs > li > a:hover {
+  color: var(--color-text);
+  background: var(--color-bg-hover);
+  border: none;
+}
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+  color: var(--color-primary);
+  background: var(--color-bg);
+  border: none;
+  border-bottom: 2px solid var(--color-primary);
+  font-weight: 600;
+}
+
+/* ============================================================
+ * Bootstrap 3 Overrides — Modals
+ * ============================================================ */
+.modal-content {
+  border-radius: var(--radius-lg);
+  border: none;
+  box-shadow: var(--shadow-lg);
+}
+.modal-header {
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.modal-header .modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.modal-body {
+  padding: var(--space-xl);
+  background: var(--color-bg);
+}
+.modal-footer {
+  padding: var(--space-md) var(--space-xl);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+.modal-backdrop {
+  background: rgba(15,23,42,0.4);
+}
+.close {
+  font-size: 18px;
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  text-shadow: none;
+  transition: opacity var(--transition-fast);
+}
+.close:hover {
+  opacity: 1;
+  color: var(--color-text);
+}
+
+/* ============================================================
+ * Bootstrap 3 Overrides — Panels / Wells
+ * ============================================================ */
+.panel {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xs);
+}
+.panel-heading {
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+}
+.panel-body {
+  padding: var(--space-lg);
+}
+.well {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  box-shadow: none;
+}
+
+/* ============================================================
+ * Bootstrap 3 Overrides — Input Groups
+ * ============================================================ */
+.input-group .form-control {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+.input-group-btn:last-child > .btn {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+.input-group-addon {
+  font-size: var(--font-size-sm);
+  border-radius: 0;
+  border-color: var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+}
+
+/* ============================================================
+ * Table overrides (for dialog tables, not Handsontable)
+ * ============================================================ */
+.table > thead > tr > th {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-bottom: 2px solid var(--color-border);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.table > tbody > tr > td {
+  font-size: var(--font-size-sm);
+  border-top: 1px solid var(--color-border-light);
+  color: var(--color-text);
+}
+
+/* ============================================================
+ * Custom Scrollbar
+ * ============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-bg-secondary); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }

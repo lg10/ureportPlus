@@ -32,6 +32,7 @@ import org.apache.velocity.VelocityContext;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 
+import com.kingint.ureport.console.auth.ConsoleAuthService;
 import com.kingint.ureport.provider.report.ReportFile;
 import com.kingint.ureport.provider.report.ReportProvider;
 
@@ -48,6 +49,11 @@ public class ConsoleServletAction extends RenderPageServletAction {
 
     @Override
     public void execute(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        if (!ConsoleAuthService.getInstance().isAuthenticated(req)) {
+            resp.sendRedirect(req.getContextPath() + "/ureport/login");
+            return;
+        }
+
         List<Map<String, String>> reports = new ArrayList<>();
         for (ReportProvider provider : reportProviders) {
             if (provider.disabled()) {
@@ -72,10 +78,34 @@ public class ConsoleServletAction extends RenderPageServletAction {
             }
         }
 
+        // Build example reports list
+        List<Map<String, String>> examples = new ArrayList<Map<String, String>>();
+        String[][] exampleDefs = {
+            {"example01-simple-table",      "简单表格 — 基础数据展示，select聚合"},
+            {"example02-vertical-group",    "纵向分层分组 — 集团→酒店→小计→合计"},
+            {"example03-horizontal-group",  "纵向分组+合并行 — 酒店名合并+房型明细"},
+            {"example04-expressions",       "表达式基础 — row(), column()函数"},
+            {"example05-cross-tab",         "交叉表 — 行×列营收矩阵"},
+            {"example06-more-expressions",  "表达式大全 — if/else, round, abs"},
+            {"example07-url-params",        "URL传参 — param()函数"},
+            {"example08-page-functions",    "页函数 — page(), pages()"},
+            {"example09-conditional-format","条件逻辑 — if/else + 链接URL"},
+            {"example10-cross-group",       "纵×横交叉分组 — 酒店(行)×房型(列)"},
+            {"example11-group-detail",      "分层+合并 — 集团→酒店(合并)→房型明细→小计"},
+        };
+        for (String[] def : exampleDefs) {
+            Map<String, String> ex = new HashMap<String, String>();
+            ex.put("name", def[0]);
+            ex.put("desc", def[1]);
+            ex.put("file", "file:examples/" + def[0] + ".ureport.xml");
+            examples.add(ex);
+        }
+
         VelocityContext context = new VelocityContext();
         context.put("contextPath", req.getContextPath());
         context.put("reports", reports);
         context.put("totalReports", reports.size());
+        context.put("examples", examples);
 
         resp.setContentType("text/html");
         resp.setCharacterEncoding("utf-8");

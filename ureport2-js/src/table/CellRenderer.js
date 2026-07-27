@@ -130,79 +130,19 @@ export function afterRenderer(td,row,col,prop,value,cellProperties){
         $td.css('line-height','');
     }
 
-    const leftBorder=cellStyle.leftBorder;
-    if(leftBorder){
-        if(leftBorder==='' || leftBorder.style==="none"){
-            $td.css({
-                'border-left':''
-            });
+    // Border rendering — consistent 4-direction handling
+    function applyBorder(dir, borderObj){
+        if(!borderObj || borderObj==='' || borderObj.style==='none' || !borderObj.width || parseInt(borderObj.width)===0){
+            $td.css('border-'+dir, '');
         }else{
-            let borderStyle='double';
-            let borderWidth=leftBorder.width;
-            if(borderWidth===null || borderWidth===undefined || borderWidth===''){
-                borderWidth=0;
-            }else{
-                borderWidth=parseInt(borderWidth);
-            }
-            if(leftBorder.style!=='solid' && borderWidth>0){
-                borderStyle=leftBorder.style;
-                borderWidth++;
-            }
-            let style=borderStyle+" "+ borderWidth+ "px rgb("+ leftBorder.color+")";
-            $td.css({
-                'border-left':style
-            });
+            const w=parseInt(borderObj.width)||1;
+            const s=borderObj.style||'solid';
+            const c=borderObj.color||'0,0,0';
+            $td.css('border-'+dir, s+' '+w+'px rgb('+c+')');
         }
     }
-
-    const rightBorder=cellStyle.rightBorder;
-    if(rightBorder){
-        if(rightBorder==='' || rightBorder.style==="none"){
-            $td.css({
-                'border-right':''
-            });
-        }else{
-            let style=rightBorder.style+" "+ rightBorder.width+ "px rgb("+ rightBorder.color+")";
-            $td.css({
-                'border-right':style
-            });
-        }
-    }
-    const topBorder=cellStyle.topBorder;
-    if(topBorder){
-        if(topBorder==='' || topBorder.style==="none"){
-            $td.css({
-                'border-top':''
-            });
-        }else{
-            let borderStyle='double';
-            let borderWidth=topBorder.width;
-            if(borderWidth===null || borderWidth===undefined || borderWidth===''){
-                borderWidth=0;
-            }else{
-                borderWidth=parseInt(borderWidth);
-            }
-            if(topBorder.style!=='solid' && borderWidth>0){
-                borderStyle=topBorder.style;
-                borderWidth++;
-            }
-            let style=borderStyle+" "+ borderWidth+ "px rgb("+ topBorder.color+")";
-            $td.css({
-                'border-top':style
-            });
-        }
-    }
-    const bottomBorder=cellStyle.bottomBorder;
-    if(bottomBorder){
-        if(bottomBorder==='' || bottomBorder.style==="none"){
-            $td.css({
-                'border-bottom':''
-            });
-        }else{
-            let style=bottomBorder.style+" "+ bottomBorder.width+ "px rgb("+ bottomBorder.color+")";
-            $td.css({
-                'border-bottom':style
-            });
-        }
-    }
+    applyBorder('left',   cellStyle.leftBorder);
+    applyBorder('right',  cellStyle.rightBorder);
+    applyBorder('top',    cellStyle.topBorder);
+    applyBorder('bottom', cellStyle.bottomBorder);
 };

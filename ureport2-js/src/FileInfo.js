@@ -2,7 +2,11 @@
  * Created by Jacky.Gao on 2017-03-01.
  */
 export default class FileInfo{
+    constructor(){
+        this.currentFile = '';
+    }
     setFile(name){
+        this.currentFile = name;
         if(!this.fileInfo){
             this.fileInfo=$(`<div style="float: right;font-size: 12px;color: #009688;margin-top: 8px;margin-right: 5px"></div>`);
             $('.ud-toolbar').append(this.fileInfo);
@@ -14,5 +18,8 @@ export default class FileInfo{
         }
         name=decodeURI(decodeURI(name));
         this.fileInfo.html('报表:'+name);
+    }
+    getFile(){
+        return this.currentFile;
     }
 };

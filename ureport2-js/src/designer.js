@@ -33,9 +33,11 @@ import {undoManager} from './Utils.js';
 import PrintLine from './PrintLine.js';
 import FileInfo from './FileInfo.js';
 import {renderRowHeader} from './table/HeaderUtils.js';
+import AiChatPanel from './ai/AiChatPanel.js';
 
 export default class UReportDesigner{
     constructor(containerId,searchFormContainerId){
+        window._designer = this;
         undoManager.setLimit(100);
         const _this=this;
         this.container=$('#'+containerId);
@@ -67,6 +69,10 @@ export default class UReportDesigner{
                 _this.context.addRowHeader(row.rowNumber-1,band);
             }
             renderRowHeader(_this.context.hot,_this.context);
+
+            // Initialize AI chat panel
+            _this.aiChatPanel = new AiChatPanel(_this.context);
+            _this.aiChatPanel.init();
         });
     }
     buildPropertyPanel(){
@@ -83,8 +89,7 @@ export default class UReportDesigner{
             </li>
         </ul>`);
         const trigger=$(`
-            <i class="glyphicon glyphicon-circle-arrow-down"
-                style="color:#9E9E9E;font-size: 16px;vertical-align: middle;cursor: pointer;float: right;margin: 10px 10px 0px 0px;"
+            <i class="glyphicon glyphicon-circle-arrow-down ud-panel-collapse-icon"
                 title="${window.i18n.panel.tip}">
              </i>
             `);
@@ -119,31 +124,46 @@ export default class UReportDesigner{
         const toolbar=$(`<div class="btn-group ud-toolbar top-toolbar"></div>`);
         this.container.prepend(toolbar);
         this.tools=[];
+        // File operations
         this.tools.push(new PreviewTool(context));
         this.tools.push(new SaveTool(context));
         this.tools.push(new OpenTool(context));
         this.tools.push(new ImportTool(context));
+        // Undo/Redo
         this.tools.push(new RedoTool(context));
         this.tools.push(new UndoTool(context));
+        // Cell operations
         this.tools.push(new MergeTool(context));
+        // Alignment
         this.tools.push(new AlignLeftTool(context));
         this.tools.push(new AlignTopTool(context));
+        // Borders
         this.tools.push(new BorderTool(context));
+        // Font
         this.tools.push(new FontFamilyTool(context));
         this.tools.push(new FontSizeTool(context));
         this.tools.push(new BoldTool(context));
         this.tools.push(new ItalicTool(context));
         this.tools.push(new UnderlineTool(context));
+        // Colors
         this.tools.push(new BgcolorTool(context));
         this.tools.push(new ForecolorTool(context));
+        // Insert
         this.tools.push(new CrosstabTool(context));
         this.tools.push(new ImageTool(context));
         this.tools.push(new ZxingTool(context));
         this.tools.push(new ChartTool(context));
+        // Settings
         this.tools.push(new SettingsTool(context));
         this.tools.push(new SearchFormSwitchTool(context));
-        for(const tool of this.tools){
-            toolbar.append(tool.buildButton());
+
+        // Separators between logical groups: file | undo | cell | align | border | font | color | insert | settings
+        const sepIndices = [4, 6, 7, 9, 10, 15, 17, 21];
+        for (let i = 0; i < this.tools.length; i++) {
+            if (sepIndices.indexOf(i) !== -1) {
+                toolbar.append($('<span class="ud-toolbar-sep"></span>'));
+            }
+            toolbar.append(this.tools[i].buildButton());
         }
     }
 }
