@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+	">
+	
+	<bean id="ureportplus.props" class="com.kingint.ureportplus.UReportPlusPropertyPlaceholderConfigurer" abstract="true">
+		<property name="ignoreUnresolvablePlaceholders" value="true"></property>
+	</bean>
+	
+	<context:property-placeholder location="classpath:ureportplus.properties" ignore-unresolvable="true"/>
+	
+	<bean id="ureportplus.exportManager" class="com.kingint.ureportplus.export.ExportManagerImpl">
+		<property name="reportRender" ref="ureportplus.reportRender"></property>
+	</bean>
+	
+	<bean id="ureportplus.reportRender" class="com.kingint.ureportplus.export.ReportRender">
+		<property name="reportParser" ref="ureportplus.reportParser"></property>
+		<property name="reportBuilder" ref="ureportplus.reportBuilder"></property>
+	</bean>
+	
+	<bean id="ureportplus.defaultImageProvider" class="com.kingint.ureportplus.provider.image.DefaultImageProvider"></bean>
+	
+	<bean id="ureportplus.fileReportProvider" class="com.kingint.ureportplus.provider.report.file.FileReportProvider">
+		<property name="fileStoreDir" value="${ureportplus.fileStoreDir}"></property>
+		<property name="disabled" value="${ureportplus.disableFileProvider}"></property>
+	</bean>
+	
+	<bean id="ureportplus.httpImageProvider" class="com.kingint.ureportplus.provider.image.HttpImageProvider"></bean>
+	<bean id="ureportplus.httpsImageProvider" class="com.kingint.ureportplus.provider.image.HttpsImageProvider"></bean>
+	
+	<bean id="ureportplus.reportBuilder" class="com.kingint.ureportplus.build.ReportBuilder">
+		<property name="hideRowColumnBuilder" ref="ureportplus.hideRowColumnBuilder"></property>
+	</bean>
+	
+	<bean id="ureportplus.hideRowColumnBuilder" class="com.kingint.ureportplus.build.HideRowColumnBuilder"></bean>
+	
+	<bean id="ureportplus.reportParser" class="com.kingint.ureportplus.parser.ReportParser"></bean>
+	
+	<bean id="ureportplus.formParserUtils" class="com.kingint.ureportplus.parser.impl.searchform.FormParserUtils"></bean>
+	<bean id="ureportplus.checkboxParser" class="com.kingint.ureportplus.parser.impl.searchform.CheckboxParser"></bean>
+	<bean id="ureportplus.gridParser" class="com.kingint.ureportplus.parser.impl.searchform.GridParser"></bean>
+	<bean id="ureportplus.radioInputParser" class="com.kingint.ureportplus.parser.impl.searchform.RadioInputParser"></bean>
+	<bean id="ureportplus.rextInputParser" class="com.kingint.ureportplus.parser.impl.searchform.TextInputParser"></bean>
+	<bean id="ureportplus.resetButtonParser" class="com.kingint.ureportplus.parser.impl.searchform.ResetButtonParser"></bean>
+	<bean id="ureportplus.submitButtonParser" class="com.kingint.ureportplus.parser.impl.searchform.SubmitButtonParser"></bean>
+	<bean id="ureportplus.selectInputParser" class="com.kingint.ureportplus.parser.impl.searchform.SelectInputParser"></bean>
+	<bean id="ureportplus.datetimeInputParser" class="com.kingint.ureportplus.parser.impl.searchform.DatetimeInputParser"></bean>
+	
+	<bean id="ureportplus.classpathReportProvider" class="com.kingint.ureportplus.provider.report.classpath.ClasspathReportProvider"></bean>
+	
+	<bean id="ureportplus.fontBuilder" class="com.kingint.ureportplus.export.pdf.font.FontBuilder"></bean>
+	
+	<bean id="ureportplus.expressionUtils" class="com.kingint.ureportplus.expression.ExpressionUtils"></bean>
+	<bean id="ureportplus.utils" class="com.kingint.ureportplus.Utils">
+		<property name="debug" value="${ureportplus.debug}"></property>
+	</bean>
+	<bean id="ureportplus.cacheUtils" class="com.kingint.ureportplus.cache.CacheUtils"></bean>
+	
+	<bean id="ureportplus.countFunction" class="com.kingint.ureportplus.expression.function.CountFunction"></bean>
+	<bean id="ureportplus.sumFunction" class="com.kingint.ureportplus.expression.function.SumFunction"></bean>
+	<bean id="ureportplus.maxFunction" class="com.kingint.ureportplus.expression.function.MaxFunction"></bean>
+	<bean id="ureportplus.minFunction" class="com.kingint.ureportplus.expression.function.MinFunction"></bean>
+	<bean id="ureportplus.listFunction" class="com.kingint.ureportplus.expression.function.ListFunction"></bean>
+	<bean id="ureportplus.avgFunction" class="com.kingint.ureportplus.expression.function.AvgFunction"></bean>
+	<bean id="ureportplus.orderFunction" class="com.kingint.ureportplus.expression.function.OrderFunction"></bean>
+	<bean id="ureportplus.WeekFunction" class="com.kingint.ureportplus.expression.function.date.WeekFunction"></bean>
+	<bean id="ureportplus.dayFunction" class="com.kingint.ureportplus.expression.function.date.DayFunction"></bean>
+	<bean id="ureportplus.monthFunction" class="com.kingint.ureportplus.expression.function.date.MonthFunction"></bean>
+	<bean id="ureportplus.yearFunction" class="com.kingint.ureportplus.expression.function.date.YearFunction"></bean>
+	<bean id="ureportplus.dateFunction" class="com.kingint.ureportplus.expression.function.date.DateFunction"></bean>
+	<bean id="ureportplus.formatNumberFunction" class="com.kingint.ureportplus.expression.function.FormatNumberFunction"></bean>
+	<bean id="ureportplus.formatDateFunction" class="com.kingint.ureportplus.expression.function.FormatDateFunction"></bean>
+	<bean id="ureportplus.getFunction" class="com.kingint.ureportplus.expression.function.GetFunction"></bean>
+	
+	<bean id="ureportplus.absFunction" class="com.kingint.ureportplus.expression.function.math.AbsFunction"></bean>
+	<bean id="ureportplus.ceilFunction" class="com.kingint.ureportplus.expression.function.math.CeilFunction"></bean>
+	<bean id="ureportplus.ChnFunction" class="com.kingint.ureportplus.expression.function.math.ChnFunction"></bean>
+	<bean id="ureportplus.ChnMoneyFunction" class="com.kingint.ureportplus.expression.function.math.ChnMoneyFunction"></bean>
+	<bean id="ureportplus.CosFunction" class="com.kingint.ureportplus.expression.function.math.CosFunction"></bean>
+	<bean id="ureportplus.ExpFunction" class="com.kingint.ureportplus.expression.function.math.ExpFunction"></bean>
+	<bean id="ureportplus.floorFunction" class="com.kingint.ureportplus.expression.function.math.FloorFunction"></bean>
+	<bean id="ureportplus.log10Function" class="com.kingint.ureportplus.expression.function.math.Log10Function"></bean>
+	<bean id="ureportplus.logFunction" class="com.kingint.ureportplus.expression.function.math.LogFunction"></bean>
+	<bean id="ureportplus.powFunction" class="com.kingint.ureportplus.expression.function.math.PowFunction"></bean>
+	<bean id="ureportplus.randomFunction" class="com.kingint.ureportplus.expression.function.math.RandomFunction"></bean>
+	<bean id="ureportplus.roundFunction" class="com.kingint.ureportplus.expression.function.math.RoundFunction"></bean>
+	<bean id="ureportplus.sinFunction" class="com.kingint.ureportplus.expression.function.math.SinFunction"></bean>
+	<bean id="ureportplus.sqrtFunction" class="com.kingint.ureportplus.expression.function.math.SqrtFunction"></bean>
+	<bean id="ureportplus.tanFunction" class="com.kingint.ureportplus.expression.function.math.TanFunction"></bean>
+	<bean id="ureportplus.stdevpFunction" class="com.kingint.ureportplus.expression.function.math.StdevpFunction"></bean>
+	<bean id="ureportplus.varaFunction" class="com.kingint.ureportplus.expression.function.math.VaraFunction"></bean>
+	<bean id="ureportplus.modeFunction" class="com.kingint.ureportplus.expression.function.math.ModeFunction"></bean>
+	<bean id="ureportplus.medianFunction" class="com.kingint.ureportplus.expression.function.math.MedianFunction"></bean>
+	
+	
+	<bean id="ureportplus.lengthFunction" class="com.kingint.ureportplus.expression.function.string.LengthFunction"></bean>
+	<bean id="ureportplus.lowerFunction" class="com.kingint.ureportplus.expression.function.string.LowerFunction"></bean>
+	<bean id="ureportplus.IndexOfFunction" class="com.kingint.ureportplus.expression.function.string.IndexOfFunction"></bean>
+	<bean id="ureportplus.replaceFunction" class="com.kingint.ureportplus.expression.function.string.ReplaceFunction"></bean>
+	<bean id="ureportplus.substringFunction" class="com.kingint.ureportplus.expression.function.string.SubstringFunction"></bean>
+	<bean id="ureportplus.trimFunction" class="com.kingint.ureportplus.expression.function.string.TrimFunction"></bean>
+	<bean id="ureportplus.upperFunction" class="com.kingint.ureportplus.expression.function.string.UpperFunction"></bean>
+	
+	<bean id="ureportplus.pageTotalFunction" class="com.kingint.ureportplus.expression.function.page.PageTotalFunction"></bean>
+	<bean id="ureportplus.pageNumberFunction" class="com.kingint.ureportplus.expression.function.page.PageNumberFunction"></bean>
+	<bean id="ureportplus.pageAvgFunction" class="com.kingint.ureportplus.expression.function.page.PageAvgFunction"></bean>
+	<bean id="ureportplus.pageCountFunction" class="com.kingint.ureportplus.expression.function.page.PageCountFunction"></bean>
+	<bean id="ureportplus.pageMaxFunction" class="com.kingint.ureportplus.expression.function.page.PageMaxFunction"></bean>
+	<bean id="ureportplus.pageMinFunction" class="com.kingint.ureportplus.expression.function.page.PageMinFunction"></bean>
+	<bean id="ureportplus.pageRowsFunction" class="com.kingint.ureportplus.expression.function.page.PageRowsFunction"></bean>
+	<bean id="ureportplus.pageSumFunction" class="com.kingint.ureportplus.expression.function.page.PageSumFunction"></bean>
+	
+	<bean id="ureportplus.parameterFunction" class="com.kingint.ureportplus.expression.function.ParameterFunction"></bean>
+	<bean id="ureportplus.parameterIsEmptyFunction" class="com.kingint.ureportplus.expression.function.ParameterIsEmptyFunction"></bean>
+	<bean id="ureportplus.jsonFunction" class="com.kingint.ureportplus.expression.function.JsonFunction"></bean>
+	
+	<bean id="ureportplus.rowFunction" class="com.kingint.ureportplus.expression.function.RowFunction"></bean>
+	<bean id="ureportplus.columnFunction" class="com.kingint.ureportplus.expression.function.ColumnFunction"></bean>
+</beans>

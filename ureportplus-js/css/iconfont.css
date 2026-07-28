@@ -1,0 +1,172 @@
+
+@font-face {font-family: "ureportplus";
+  src: url('iconfont.eot'); /* IE9*/
+  src: url('iconfont.ttf') format('truetype');
+}
+
+.ureportplus {
+  font-family:"ureportplus" !important;
+  font-size:16px;
+  font-style:normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ureportplus-setting:before { content: "\e603"; }
+
+.ureportplus-plus:before { content: "\e608"; }
+
+.ureportplus-shareconnection:before { content: "\e660"; }
+
+.ureportplus-bar:before { content: "\e66b"; }
+
+.ureportplus-bgcolor2:before { content: "\e76c"; }
+
+.ureportplus-crosstab:before { content: "\e60b"; }
+
+.ureportplus-subreport:before { content: "\e64f"; }
+
+.ureportplus-barcode:before { content: "\e6f8"; }
+
+.ureportplus-underline:before { content: "\e8ab"; }
+
+.ureportplus-horizontal-bar:before { content: "\e62d"; }
+
+.ureportplus-scatter:before { content: "\e632"; }
+
+.ureportplus-sqlds:before { content: "\e6b6"; }
+
+.ureportplus-qrcode:before { content: "\e72c"; }
+
+.ureportplus-bgcolor:before { content: "\e62c"; }
+
+.ureportplus-fontsize:before { content: "\e63f"; }
+
+.ureportplus-fontfamily:before { content: "\e618"; }
+
+.ureportplus-area:before { content: "\e9d7"; }
+
+.ureportplus-italic:before { content: "\eb31"; }
+
+.ureportplus-bold:before { content: "\e61f"; }
+
+.ureportplus-minus:before { content: "\e60c"; }
+
+.ureportplus-methodds:before { content: "\e69c"; }
+
+.ureportplus-print1:before { content: "\e62a"; }
+
+.ureportplus-database:before { content: "\e693"; }
+
+.ureportplus-bubble:before { content: "\e6b0"; }
+
+.ureportplus-x-xlsx:before { content: "\e690"; }
+
+.ureportplus-copy:before { content: "\e62f"; }
+
+.ureportplus-pie:before { content: "\e602"; }
+
+.ureportplus-save:before { content: "\e86f"; }
+
+.ureportplus-open:before { content: "\e624"; }
+
+.ureportplus-deletecolumn:before { content: "\e6f3"; }
+
+.ureportplus-deleterow:before { content: "\e6f4"; }
+
+.ureportplus-insertrow:before { content: "\e754"; }
+
+.ureportplus-property:before { content: "\e675"; }
+
+.ureportplus-aligntop:before { content: "\e623"; }
+
+.ureportplus-alignbottom:before { content: "\e625"; }
+
+.ureportplus-alignmiddle:before { content: "\e627"; }
+
+.ureportplus-clean:before { content: "\e628"; }
+
+.ureportplus-forecolor:before { content: "\e670"; }
+
+.ureportplus-footer-repeat:before { content: "\e62b"; }
+
+.ureportplus-pdf:before { content: "\e68f"; }
+
+.ureportplus-print:before { content: "\e633"; }
+
+.ureportplus-first:before { content: "\e629"; }
+
+.ureportplus-alignleft:before { content: "\e634"; }
+
+.ureportplus-alignright:before { content: "\e639"; }
+
+.ureportplus-merge:before { content: "\e63d"; }
+
+.ureportplus-redo:before { content: "\e61c"; }
+
+.ureportplus-mixchart:before { content: "\e669"; }
+
+.ureportplus-import:before { content: "\e609"; }
+
+.ureportplus-clean-content:before { content: "\e604"; }
+
+.ureportplus-undo:before { content: "\e74a"; }
+
+.ureportplus-title:before { content: "\e712"; }
+
+.ureportplus-no-border:before { content: "\e600"; }
+
+.ureportplus-aligncenter:before { content: "\e888"; }
+
+.ureportplus-word:before { content: "\e605"; }
+
+.ureportplus-summary:before { content: "\e749"; }
+
+.ureportplus-doughnut:before { content: "\e88c"; }
+
+.ureportplus-preview:before { content: "\e60f"; }
+
+.ureportplus-clean-style:before { content: "\e64b"; }
+
+.ureportplus-line:before { content: "\e695"; }
+
+.ureportplus-leaf:before { content: "\e6bb"; }
+
+.ureportplus-21print:before { content: "\e644"; }
+
+.ureportplus-height:before { content: "\e610"; }
+
+.ureportplus-radar:before { content: "\e671"; }
+
+.ureportplus-image:before { content: "\e626"; }
+
+.ureportplus-bottom-border:before { content: "\e61e"; }
+
+.ureportplus-top-border:before { content: "\e61d"; }
+
+.ureportplus-full-border:before { content: "\e620"; }
+
+.ureportplus-left-border:before { content: "\e621"; }
+
+.ureportplus-right-border:before { content: "\e622"; }
+
+.ureportplus-next:before { content: "\e60d"; }
+
+.ureportplus-prev:before { content: "\e606"; }
+
+.ureportplus-pdf-printer:before { content: "\e607"; }
+
+.ureportplus-forecolor1:before { content: "\e601"; }
+
+.ureportplus-end:before { content: "\e60a"; }
+
+.ureportplus-insert-column:before { content: "\e619"; }
+
+.ureportplus-polar:before { content: "\e60e"; }
+
+.ureportplus-width:before { content: "\e611"; }
+
+.ureportplus-header-repeat:before { content: "\e696"; }
+
+.ureportplus-paste:before { content: "\e612"; }
+

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+	">
+	<import resource="classpath:ureportplus-core-context.xml"/>
+	<import resource="classpath:ureportplus-font-context.xml"/>
+	
+	<bean id="ureportplus.datasourceServletAction" class="com.kingint.ureportplus.console.designer.DatasourceServletAction"></bean>
+	<bean id="ureportplus.resourceLoaderServletAction" class="com.kingint.ureportplus.console.res.ResourceLoaderServletAction"></bean>
+	<bean id="ureportplus.designerServletAction" class="com.kingint.ureportplus.console.designer.DesignerServletAction">
+		<property name="reportRender" ref="ureportplus.reportRender"></property>
+		<property name="reportParser" ref="ureportplus.reportParser"></property>
+	</bean>
+	
+	<bean id="ureportplus.searchFormDesignerAction" class="com.kingint.ureportplus.console.designer.SearchFormDesignerAction"></bean>
+	
+	<bean id="ureportplus.htmlPreviewServletAction" class="com.kingint.ureportplus.console.html.HtmlPreviewServletAction">
+		<property name="exportManager" ref="ureportplus.exportManager"></property>
+		<property name="reportBuilder" ref="ureportplus.reportBuilder"></property>
+		<property name="reportRender" ref="ureportplus.reportRender"></property>
+	</bean>
+	<bean id="ureportplus.exportWordServletAction" class="com.kingint.ureportplus.console.word.ExportWordServletAction">
+		<property name="exportManager" ref="ureportplus.exportManager"></property>
+		<property name="reportBuilder" ref="ureportplus.reportBuilder"></property>
+		<property name="reportRender" ref="ureportplus.reportRender"></property>
+	</bean>
+
+	<bean id="ureportplus.exportPdfServletAction" class="com.kingint.ureportplus.console.pdf.ExportPdfServletAction">
+		<property name="exportManager" ref="ureportplus.exportManager"></property>
+		<property name="reportBuilder" ref="ureportplus.reportBuilder"></property>
+		<property name="reportRender" ref="ureportplus.reportRender"></property>
+	</bean>
+
+	<bean id="ureportplus.exportExcelServletAction" class="com.kingint.ureportplus.console.excel.ExportExcelServletAction">
+		<property name="exportManager" ref="ureportplus.exportManager"></property>
+		<property name="reportBuilder" ref="ureportplus.reportBuilder"></property>
+		<property name="reportRender" ref="ureportplus.reportRender"></property>
+	</bean>
+
+	<bean id="ureportplus.exportExcel97ServletAction" class="com.kingint.ureportplus.console.excel.ExportExcel97ServletAction">
+		<property name="exportManager" ref="ureportplus.exportManager"></property>
+		<property name="reportBuilder" ref="ureportplus.reportBuilder"></property>
+		<property name="reportRender" ref="ureportplus.reportRender"></property>
+	</bean>
+	
+	<bean id="ureportplus.imageServletAction" class="com.kingint.ureportplus.console.image.ImageServletAction"></bean>
+	<bean id="ureportplus.importExcelServletAction" class="com.kingint.ureportplus.console.importexcel.ImportExcelServletAction"></bean>
+	
+	<bean id="ureportplus.consoleServletAction" class="com.kingint.ureportplus.console.ConsoleServletAction"></bean>
+	<bean id="ureportplus.versionServletAction" class="com.kingint.ureportplus.console.version.VersionServletAction"></bean>
+	<bean id="ureportplus.chartServletAction" class="com.kingint.ureportplus.console.chart.ChartServletAction"></bean>
+	<bean id="ureportplus.aiServletAction" class="com.kingint.ureportplus.console.ai.AiServletAction"></bean>
+	<bean id="ureportplus.loginServletAction" class="com.kingint.ureportplus.console.auth.LoginServletAction"></bean>
+	
+	<bean id="ureportplus.httpSessionReportCache" class="com.kingint.ureportplus.console.cache.HttpSessionReportCache">
+		<property name="disabled" value="${ureportplus.disableHttpSessionReportCache}"></property>
+	</bean>
+
+	<bean id="ureportplus.exampleInitializer" class="com.kingint.ureportplus.console.ExampleInitializer"/>
+
+</beans>

@@ -1,0 +1,230 @@
+/* ============================================================
+ * UReportPlus Designer — Layout & Component Styles
+ * ============================================================ */
+
+/* ---- Handsontable Grid Skin ---- */
+.handsontable tr { background: transparent; }
+.handsontable td, .handsontable th { background: transparent; }
+.handsontable table.htCore {
+  border-collapse: collapse;
+  border: 1px solid var(--color-border);
+}
+
+/* Grid borders — default color, inline border styles take precedence */
+.handsontable th,
+.handsontable td {
+  border-color: var(--color-border-light);
+}
+
+/* Header cells (row numbers, column letters) */
+.handsontable .ht_clone_top th,
+.handsontable .ht_clone_left th {
+  background: var(--color-bg-secondary) !important;
+  color: var(--color-text-secondary) !important;
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  border-color: var(--color-border);
+}
+
+/* Corner header */
+.handsontable .ht_clone_top_left_corner th {
+  background: var(--color-bg-tertiary) !important;
+}
+
+/* Selected cells */
+.handsontable td.area,
+.handsontable th.area {
+  background: rgba(37,99,235,0.08) !important;
+}
+.handsontable td.current {
+  background: rgba(37,99,235,0.12) !important;
+}
+
+/* Selection border */
+.wtBorder {
+  background-color: var(--color-primary) !important;
+}
+.wtBorder.corner {
+  border: 2px solid var(--color-primary) !important;
+}
+
+/* ---- Toolbar ---- */
+.ud-toolbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  padding: 2px 4px;
+  box-shadow: var(--shadow-xs);
+  min-height: 36px;
+  flex-wrap: wrap;
+  gap: 1px;
+}
+
+/* Toolbar button */
+.ud-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 30px;
+  padding: 2px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.ud-toolbar-btn i {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.ud-toolbar-btn:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text);
+}
+
+.ud-toolbar-btn:active,
+.ud-toolbar-btn.active {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* Toolbar button with dropdown arrow */
+.ud-toolbar-btn.dropdown-toggle {
+  padding-right: 14px;
+}
+.ud-toolbar-btn.dropdown-toggle::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  margin-top: -2px;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid var(--color-text-muted);
+}
+
+/* Toolbar separator group */
+.ud-toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border);
+  margin: 0 2px;
+  align-self: center;
+}
+
+/* ---- Property Panel ---- */
+.ud-property-panel {
+  width: 380px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  top: 42px;
+  left: 710px;
+  z-index: 105;
+  position: absolute;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.ud-property-panel .nav-tabs {
+  padding: 4px 4px 0 4px;
+  background: var(--color-bg-secondary);
+}
+
+.ud-property-panel .tab-content {
+  padding: var(--space-md);
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+/* Panel section headers */
+.ud-panel-section {
+  margin-bottom: var(--space-md);
+}
+.ud-panel-section-title {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-sm);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+/* Panel row (label + input in a row) */
+.ud-panel-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+  gap: var(--space-sm);
+}
+.ud-panel-row > label {
+  flex: 0 0 auto;
+  min-width: 50px;
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+.ud-panel-row > select,
+.ud-panel-row > input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---- Color indicators ---- */
+.ud-select-color {
+  background: #000;
+  width: 16px;
+  height: 4px;
+  display: block;
+  border-radius: 1px;
+}
+.ud-select-bgcolor {
+  background: #fff;
+  width: 16px;
+  height: 4px;
+  display: block;
+  border: 1px solid var(--color-border);
+  border-radius: 1px;
+}
+
+/* ---- Panel collapse icon ---- */
+.ud-panel-collapse-icon {
+  color: var(--color-text-muted);
+  font-size: 15px;
+  vertical-align: middle;
+  cursor: pointer;
+  float: right;
+  margin: 8px 8px 0 0;
+  transition: opacity var(--transition-fast);
+}
+.ud-panel-collapse-icon:hover {
+  opacity: 0.8;
+}
+
+/* ---- Status bar / dirty indicator ---- */
+.ud-dirty-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  margin-left: var(--space-xs);
+  animation: ud-pulse 2s infinite;
+}
+@keyframes ud-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}

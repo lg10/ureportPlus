@@ -1,15 +1,15 @@
 # Overview
 
-It is inevitable to apply functions and expressions to calculate some data during use of reports. Writing expressions are supported in many places in UReport2. Most typically, we can change the type of the cell to be “expression” and then we can enter the corresponding expression and function in the expression editor below. Moreover, we can also use expressions in conditions, picture sources and QR code data sources etc. in UReport2. The complex statements and reports can only be prepared after we learn and master expressions provided in UReport2.
+It is inevitable to apply functions and expressions to calculate some data during use of reports. Writing expressions are supported in many places in UReportPlus. Most typically, we can change the type of the cell to be “expression” and then we can enter the corresponding expression and function in the expression editor below. Moreover, we can also use expressions in conditions, picture sources and QR code data sources etc. in UReportPlus. The complex statements and reports can only be prepared after we learn and master expressions provided in UReportPlus.
 
 # Basic syntax
 
-Similar to general programming languages, expressions in UReport2 have some basic data types, such as number and string etc., as shown in the table below:
+Similar to general programming languages, expressions in UReportPlus have some basic data types, such as number and string etc., as shown in the table below:
 
 | Expression type | Description | Example |
 | :--- | :--- | :--- |
 | Number | It can be either an integer or a decimal | 1, 123 and 0.121331 are all legal numbers |
-| String | The string shall be put in single quotes or double quotes | ‘ureport2’, "UReport2” and ‘UReport2 course’ are all legal strings |
+| String | The string shall be put in single quotes or double quotes | ‘ureportplus’, "UReportPlus” and ‘UReportPlus course’ are all legal strings |
 | Boolean value | Boolean value represents Yes or No | There are two Boolean values: true & false |
 
 The above three basic data types can be used independently or used in combinatorial calculation by connecting them with “+”, “-”, “\*”, "/” and “%”, as listed in the table below:
@@ -22,11 +22,11 @@ The above three basic data types can be used independently or used in combinator
 | / | Calculate the division of two numbers | 6/3 results in 2. If one number will not divide into the other number, 8 decimal places shall be kept |
 | % | Calculate the residual value of two numbers | 5%3 results in 2; and 6%2 results in 0 |
 
-UReport2 also provides several types of conditional judgement operators. The first is the ternary expression.
+UReportPlus also provides several types of conditional judgement operators. The first is the ternary expression.
 
 # Ternary expression
 
-Almost all languages support the ternary expression judgement, which is clear and simple and makes conditional judgements based on the fewest codes. The syntactic structure of the ternary expression in UReport2 is shown in the figure below:
+Almost all languages support the ternary expression judgement, which is clear and simple and makes conditional judgements based on the fewest codes. The syntactic structure of the ternary expression in UReportPlus is shown in the figure below:
 
 ![](/docs/images/ternaryexpr.png)
 
@@ -39,7 +39,7 @@ According to the figure, it is same with ordinary ternary expressions that the f
 
 # If Expression
 
-The syntactic structure of if expression in UReport2 is shown in the figure below:
+The syntactic structure of if expression in UReportPlus is shown in the figure below:
 
 ![](/docs/images/ifexpr.png)According to the figure, if judgement expression consists of the part of if conditional judgement, the judgement with several alternative elseif conditions and finally the part of alternative else conditions. The syntactic structure is similar to java or javascript.
 
@@ -51,7 +51,7 @@ The syntactic structure of if expression in UReport2 is shown in the figure belo
 
 # Case Expression
 
-Case expression is another form of conditional judgement provided by UReport2. It is similar to if judgement, but is simpler. Its syntactic structure is shown in the figure below:
+Case expression is another form of conditional judgement provided by UReportPlus. It is similar to if judgement, but is simpler. Its syntactic structure is shown in the figure below:
 
 ![](/docs/images/caseexpr.png)
 
@@ -64,7 +64,7 @@ The case judgement should be put in case{...}, followed by several conditions an
 
 # Cell reference
 
-Currently, most calculations in reports are made against cells or are relevant to cells. Since cells in reports are mostly bound to data and data are often multiple, one cell may have multiple values after calculation, making cell reference more complicated. In UReport2, the target cell referred to is calculated relative to the current cell. The name of the cell can be directly written in the expression for cell reference. For example, if referring to cell A1, directly write A1 in the expression. See the example below:
+Currently, most calculations in reports are made against cells or are relevant to cells. Since cells in reports are mostly bound to data and data are often multiple, one cell may have multiple values after calculation, making cell reference more complicated. In UReportPlus, the target cell referred to is calculated relative to the current cell. The name of the cell can be directly written in the expression for cell reference. For example, if referring to cell A1, directly write A1 in the expression. See the example below:
 
 ![](/docs/images/s1.png)
 
@@ -78,7 +78,7 @@ Since D1 is the sub-cell to A1, the data that cell A1 is bound to featues the se
 
 Similarly, if entering expression C1 in D1, it will fill in each D1 cell with the value of C1 cell that is located in the same row of D1 cell. The result is not given here.
 
-According to the above example, if referring to the target cell with an expression in a cell in UReport2, the first thing is to judge whether the target cell is located in the same row of column with this cell. If yes, the value of the target cell at the corresponding row or column can be directly applied. If the current cell and the target cell are not in the sam row or column, the situation will be different. Let’s see another example.
+According to the above example, if referring to the target cell with an expression in a cell in UReportPlus, the first thing is to judge whether the target cell is located in the same row of column with this cell. If yes, the value of the target cell at the corresponding row or column can be directly applied. If the current cell and the target cell are not in the sam row or column, the situation will be different. Let’s see another example.
 
 ![](/docs/images/s2.png)
 
@@ -86,9 +86,9 @@ In the above example, we enter B1 in the expression of cell C2 to indicate the r
 
 ![](/docs/images/s2-runtime.png)
 
-Outputs of several values：If more than one value is acquired in UReport2, these values shall be separated with “,” for outputs, as shown in the figure above.
+Outputs of several values：If more than one value is acquired in UReportPlus, these values shall be separated with “,” for outputs, as shown in the figure above.
 
-Principle for acquisition of the target cell ：As indicated in the above example, when acquiring the value of the target cell through the expression in a cell in UReport2, the first thing to consider is whether the target cell is located in the same row or column with the current cell. If yes, apply the value of the target cell located in the same row or column. If no, apply all target cells that have a common parent cell with the current cell. If they have a common top parent cell or common left parent cell, apply the target cell in the intersction between the common top parent cell and common left parent cell; and if they do not have a common parent cell, then all target cells after iteration shall be applied.
+Principle for acquisition of the target cell ：As indicated in the above example, when acquiring the value of the target cell through the expression in a cell in UReportPlus, the first thing to consider is whether the target cell is located in the same row or column with the current cell. If yes, apply the value of the target cell located in the same row or column. If no, apply all target cells that have a common parent cell with the current cell. If they have a common top parent cell or common left parent cell, apply the target cell in the intersction between the common top parent cell and common left parent cell; and if they do not have a common parent cell, then all target cells after iteration shall be applied.
 
 If we enter C1 in the above cell in the above example, the result will be different. Since C1 is the top parent cell to C2, we directly use the value of the top parent cell located in the same column. The result is shown in the following figure:
 
@@ -106,7 +106,7 @@ Change the parent cell to get the value of a cell：When introducing the report 
 
 # Cell coordinates
 
-UReport2 introduces the concept of cell coordinates in order to realize the more complicated cell reference. The cell coordinates are also calculated relative to the current cell. The principle of giving priority the same row, same column or common parent cell introduced above shall also apply here. A standard form of cell coordinates shall be as follows:
+UReportPlus introduces the concept of cell coordinates in order to realize the more complicated cell reference. The cell coordinates are also calculated relative to the current cell. The principle of giving priority the same row, same column or common parent cell introduced above shall also apply here. A standard form of cell coordinates shall be as follows:
 
 **CellName\[Li:li,Li-1:li-1,…;Ti:ti,Ti-1:ti-1…\]  
 {condition...}    
@@ -145,7 +145,7 @@ In the above report template, the expression in cell D2 is C2 - C2\\[A2:-1\], wh
 
 ![](/docs/images/s5-runtime.png)
 
-In this result, the month-on-month value in the first row is 0, because the previous row does not exist as cell D2 is located in the first row. In this case, UReport2 takes the value of the first C2 cell by default. The difference beteen the two values is 0.
+In this result, the month-on-month value in the first row is 0, because the previous row does not exist as cell D2 is located in the first row. In this case, UReportPlus takes the value of the first C2 cell by default. The difference beteen the two values is 0.
 
 # Year-on-year basis
 
@@ -157,7 +157,7 @@ In the above template, cell D2 firstly acquires the value of cell C2 at the same
 
 ![](/docs/images/s6-runtime.png)
 
-For $B2 in UReport2, adding $ before the name of the cell means to take the value of the cell relative to the target cell, which is mostly used in conditions. For example, in the C2\[A2:-1\]{B2==$B2} above, $B2 represents the value of cell B2 corresponding to cell C2 acquried.
+For $B2 in UReportPlus, adding $ before the name of the cell means to take the value of the cell relative to the target cell, which is mostly used in conditions. For example, in the C2\[A2:-1\]{B2==$B2} above, $B2 represents the value of cell B2 corresponding to cell C2 acquried.
 
 In the above instance, the year-on-year values are all 0 in the first group below 2,000, because the coordinates A2:-1 do not exist in the group and cannot be moved upward. Therefore, the system takes the current record by default, so the calculation results all turn out to be 0. If we hope the result shows no 0, we can add an if conditional judgement expression. If the current cell is located in the first group, enter the blank string, or the value upon practical calculation. The revised report template is listed below:
 
@@ -171,7 +171,7 @@ The run effect is shown in the following figure:
 
 ![](/docs/images/s7-runtime.png)
 
-In the above examples, we uses "if judgment expression". Certainly, we can also adopt the "ternary expression" for judgment or the "case" for judgment. In the "if judgment", we firstly judge whether &A2==1 is established. In the formula, A2 represents the sequence relative to current expanded cell A2. In UReport2, we may mark the sequence of an expanded cell in a way of "&cell name". It should be noted that, when we mark the sequence of an expanded target cell in a way of "&cell name", the current cell must be the sub cell or indirect sub cell of the target cell; for example, in the above examples, the cell using &A2 is D2, an indirect cell of A2 unit. In this way, we can obtain the sequence value of the expanded A2 unit correctly.
+In the above examples, we uses "if judgment expression". Certainly, we can also adopt the "ternary expression" for judgment or the "case" for judgment. In the "if judgment", we firstly judge whether &A2==1 is established. In the formula, A2 represents the sequence relative to current expanded cell A2. In UReportPlus, we may mark the sequence of an expanded cell in a way of "&cell name". It should be noted that, when we mark the sequence of an expanded target cell in a way of "&cell name", the current cell must be the sub cell or indirect sub cell of the target cell; for example, in the above examples, the cell using &A2 is D2, an indirect cell of A2 unit. In this way, we can obtain the sequence value of the expanded A2 unit correctly.
 
 Regarding the use of &sign 	When the "& cell name" is used to mark the sequence of a target cell expanded, in addition to the notice described above, we should also notice that, obtaining sequences will be based on their common parent cell. If they share the same parent cell, sequences are to be arranged according to the quantity of target cells in the parrent cell. This has been embodied in the previous video of introducing the report calculation model when the data in slave table is sequenced  to achieve detailed main and slave reports.
 
