@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.kingint.ureportplus.definition.CellDefinition;
+import com.kingint.ureportplus.definition.ColumnDefinition;
 import com.kingint.ureportplus.definition.ReportDefinition;
+import com.kingint.ureportplus.definition.RowDefinition;
 import com.kingint.ureportplus.definition.dataset.DatasetDefinition;
 import com.kingint.ureportplus.definition.dataset.Field;
 import com.kingint.ureportplus.definition.dataset.Parameter;
@@ -19,10 +21,8 @@ import com.kingint.ureportplus.definition.value.Value;
 import com.kingint.ureportplus.definition.value.ValueType;
 
 /**
- * Builds structured context for the AI about the current report:
- * - dataset schemas (names, fields, SQL)
- * - expression syntax reference
- * - current cell layout with types and values
+ * Builds structured context for the AI about the current report including
+ * datasets, expression syntax, cell layout, row/col dimensions, bands, and merges.
  */
 public class ReportContextBuilder {
 
@@ -46,13 +46,9 @@ public class ReportContextBuilder {
 						dsInfo.put("name", ds.getName());
 						List<String> fields = new ArrayList<String>();
 						if (ds.getFields() != null) {
-							for (Field f : ds.getFields()) {
-								fields.add(f.getName());
-							}
+							for (Field f : ds.getFields()) fields.add(f.getName());
 						}
 						dsInfo.put("fields", fields);
-
-						// Include SQL for SQL datasets
 						if (ds instanceof SqlDatasetDefinition) {
 							SqlDatasetDefinition sqlDs = (SqlDatasetDefinition) ds;
 							dsInfo.put("sql", sqlDs.getSql());
@@ -112,7 +108,6 @@ public class ReportContextBuilder {
 			"+ - * / %", "> < == != >= <=",
 			"in, not in", "like", "and/&&, or/||", "!"
 		});
-
 		context.put("expressionSyntax", syntax);
 
 		// 3. Cell layout
@@ -124,7 +119,6 @@ public class ReportContextBuilder {
 				cellInfo.put("row", cell.getRowNumber());
 				cellInfo.put("col", cell.getColumnNumber());
 				cellInfo.put("expand", cell.getExpand() != null ? cell.getExpand().name() : "None");
-
 				Value value = cell.getValue();
 				if (value != null) {
 					cellInfo.put("type", value.getType().name());
@@ -139,14 +133,8 @@ public class ReportContextBuilder {
 						cellInfo.put("property", dv.getProperty());
 					}
 				}
-
-				if (cell.getLeftParentCellName() != null) {
-					cellInfo.put("leftParent", cell.getLeftParentCellName());
-				}
-				if (cell.getTopParentCellName() != null) {
-					cellInfo.put("topParent", cell.getTopParentCellName());
-				}
-
+				if (cell.getLeftParentCellName() != null) cellInfo.put("leftParent", cell.getLeftParentCellName());
+				if (cell.getTopParentCellName() != null) cellInfo.put("topParent", cell.getTopParentCellName());
 				cells.add(cellInfo);
 			}
 		}
@@ -156,37 +144,73 @@ public class ReportContextBuilder {
 		context.put("totalRows", reportDef.getRows() != null ? reportDef.getRows().size() : 0);
 		context.put("totalColumns", reportDef.getColumns() != null ? reportDef.getColumns().size() : 0);
 
+		// 5. Row details
+		List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
+		if (reportDef.getRows() != null) {
+			for (RowDefinition row : reportDef.getRows()) {
+				Map<String, Object> ri = new HashMap<String, Object>();
+				ri.put("number", row.getRowNumber());
+				ri.put("height", row.getHeight());
+				if (row.getBand() != null) ri.put("band", row.getBand().name());
+				rows.add(ri);
+			}
+		}
+		context.put("rows", rows);
+
+		// 6. Column details
+		List<Map<String, Object>> columns = new ArrayList<Map<String, Object>>();
+		if (reportDef.getColumns() != null) {
+			for (ColumnDefinition col : reportDef.getColumns()) {
+				Map<String, Object> ci = new HashMap<String, Object>();
+				ci.put("number", col.getColumnNumber());
+				ci.put("width", col.getWidth());
+				columns.add(ci);
+			}
+		}
+		context.put("columns", columns);
+
+		// 7. Merged cells
+		List<Map<String, Object>> merges = new ArrayList<Map<String, Object>>();
+		if (reportDef.getCells() != null) {
+			for (CellDefinition cell : reportDef.getCells()) {
+				if (cell.getColSpan() > 1 || cell.getRowSpan() > 1) {
+					Map<String, Object> m = new HashMap<String, Object>();
+					m.put("cell", cell.getName());
+					m.put("rowSpan", cell.getRowSpan());
+					m.put("colSpan", cell.getColSpan());
+					merges.add(m);
+				}
+			}
+		}
+		context.put("merges", merges);
+
 		return context;
 	}
 
 	/**
-	 * Build the system prompt for the AI agent.
+	 * Build the system prompt for the AI agent with full structural capabilities.
 	 */
+	@SuppressWarnings("unchecked")
 	public String buildSystemPrompt(Map<String, Object> context) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("你是一个 UReportPlus 报表设计助手。你将根据用户的自然语言描述，生成报表单元格的修改指令。\n\n");
 
 		sb.append("## 可用数据集\n");
-		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> datasets = (List<Map<String, Object>>) context.get("datasets");
 		if (datasets.isEmpty()) {
 			sb.append("(无数据集配置)\n");
 		} else {
 			for (Map<String, Object> ds : datasets) {
 				sb.append("- **").append(ds.get("name")).append("**: 字段=[");
-				@SuppressWarnings("unchecked")
 				List<String> fields = (List<String>) ds.get("fields");
 				sb.append(String.join(", ", fields));
 				sb.append("]");
-				if (ds.containsKey("sql")) {
-					sb.append(", SQL: ").append(ds.get("sql"));
-				}
+				if (ds.containsKey("sql")) sb.append(", SQL: ").append(ds.get("sql"));
 				sb.append("\n");
 			}
 		}
 
 		sb.append("\n## 表达式语法\n");
-		@SuppressWarnings("unchecked")
 		Map<String, Object> syntax = (Map<String, Object>) context.get("expressionSyntax");
 		sb.append("- 数据集表达式: ").append(syntax.get("datasetPattern")).append("\n");
 		sb.append("- 聚合类型: ").append(String.join(", ", (String[]) syntax.get("aggregates"))).append("\n");
@@ -196,11 +220,11 @@ public class ReportContextBuilder {
 
 		sb.append("\n## 当前报表布局\n");
 		sb.append("总行数: ").append(context.get("totalRows"));
-		sb.append(", 总列数: ").append(context.get("totalColumns")).append("\n");
-		@SuppressWarnings("unchecked")
+		sb.append(", 总列数: ").append(context.get("totalColumns")).append("\n\n");
+
 		List<Map<String, Object>> cells = (List<Map<String, Object>>) context.get("cells");
-		sb.append("| 单元格 | 行 | 列 | 类型 | 值/表达式 | 展开 | 左父格 |\n");
-		sb.append("|--------|----|----|------|----------|------|--------|\n");
+		sb.append("| 单元格 | 行 | 列 | 类型 | 值/表达式 | 展开 | 左父格 | 上父格 |\n");
+		sb.append("|--------|----|----|------|----------|------|--------|--------|\n");
 		for (Map<String, Object> cell : cells) {
 			sb.append("| ").append(cell.get("name"));
 			sb.append(" | ").append(cell.get("row"));
@@ -209,13 +233,37 @@ public class ReportContextBuilder {
 			Object val = null;
 			if (cell.containsKey("simpleValue")) val = cell.get("simpleValue");
 			else if (cell.containsKey("expressionValue")) val = cell.get("expressionValue");
-			else if (cell.containsKey("datasetName")) {
+			else if (cell.containsKey("datasetName"))
 				val = cell.get("datasetName") + "." + cell.get("aggregate") + "(" + cell.get("property") + ")";
-			}
 			sb.append(" | ").append(val != null ? val : "");
 			sb.append(" | ").append(cell.get("expand"));
 			sb.append(" | ").append(cell.get("leftParent") != null ? cell.get("leftParent") : "");
+			sb.append(" | ").append(cell.get("topParent") != null ? cell.get("topParent") : "");
 			sb.append(" |\n");
+		}
+
+		if (context.containsKey("rows")) {
+			List<Map<String, Object>> rows = (List<Map<String, Object>>) context.get("rows");
+			sb.append("\n## 行结构\n");
+			for (Map<String, Object> r : rows) {
+				sb.append("- 行").append(r.get("number")).append(": 高=").append(r.get("height"));
+				if (r.get("band") != null) sb.append(" band=").append(r.get("band"));
+				sb.append("\n");
+			}
+		}
+		if (context.containsKey("columns")) {
+			List<Map<String, Object>> cols = (List<Map<String, Object>>) context.get("columns");
+			sb.append("\n## 列结构\n");
+			for (Map<String, Object> c : cols) {
+				sb.append("- 列").append(c.get("number")).append(": 宽=").append(c.get("width")).append("\n");
+			}
+		}
+		if (context.containsKey("merges") && !((List<?>)context.get("merges")).isEmpty()) {
+			sb.append("\n## 合并单元格\n");
+			for (Map<String, Object> m : (List<Map<String, Object>>)context.get("merges")) {
+				sb.append("- ").append(m.get("cell"));
+				sb.append(" rowSpan=").append(m.get("rowSpan")).append(" colSpan=").append(m.get("colSpan")).append("\n");
+			}
 		}
 
 		sb.append("\n## 输出格式\n");
@@ -231,6 +279,7 @@ public class ReportContextBuilder {
 		sb.append("    \"property\": \"字段名(仅type=dataset时)\",\n");
 		sb.append("    \"expand\": \"Down|Right|None\",\n");
 		sb.append("    \"leftParent\": \"左父格名称,如A2\",\n");
+		sb.append("    \"topParent\": \"上父格名称\",\n");
 		sb.append("    \"explanation\": \"修改说明\"\n");
 		sb.append("  }\n");
 		sb.append("]\n");
@@ -241,8 +290,9 @@ public class ReportContextBuilder {
 		sb.append("3. 表达式必须使用上述可用数据集中的字段名\n");
 		sb.append("4. 分组(group)单元格的expand应为Down或Right\n");
 		sb.append("5. 汇总(sum/count/avg等)单元格的expand应为None\n");
-		sb.append("6. 设置左父格可以限定聚合范围(如小计单元格的左父格应为分组单元格)\n");
+		sb.append("6. 设置左父格可以限定聚合范围\n");
 		sb.append("7. 如果用户的请求无法实现，返回空数组[]\n");
+		sb.append("8. cellName 格式为列字母+行号(如 A1, B3, C2)\n");
 
 		return sb.toString();
 	}

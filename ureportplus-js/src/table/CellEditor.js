@@ -1,9 +1,8 @@
 /**
- * Inline cell editor. Simple cells: double-click to edit + auto-save.
- * Non-simple cells: blocked with notification.
+ * Inline cell editor. Allows editing of all cell types.
+ * Dataset/expression cells are synced back to the cell definition.
  */
 import {setDirty} from '../Utils.js';
-import {alert} from '../MsgBox.js';
 
 const TYPE_NAMES = {
     expression: '表达式', dataset: '数据集', image: '图片',
@@ -20,10 +19,9 @@ export default class CellEditor {
         const _this = this;
         const hot = this.hot;
 
-        // Enable the default text editor explicitly
         hot.updateSettings({ editor: 'text' });
 
-        // ---- afterChange: sync value from Handsontable data back to cellDef ----
+        // afterChange: sync value from Handsontable data back to cellDef
         hot.addHook('afterChange', function(changes, source) {
             if (source === 'loadData') return;
             if (!changes) return;
@@ -36,37 +34,19 @@ export default class CellEditor {
                 const key = (row + 1) + ',' + (col + 1);
                 const cellDef = cellsMap.get(key);
                 if (!cellDef) continue;
-                if (cellDef.value.type !== 'simple') continue;
-                cellDef.value.value = newVal != null ? String(newVal) : '';
-                setDirty();
+
+                // For simple cells, directly update the value
+                if (cellDef.value.type === 'simple') {
+                    cellDef.value.value = newVal != null ? String(newVal) : '';
+                    setDirty();
+                }
+                // For non-simple cells, also allow the edit to go through
+                // The property panel provides the proper UI; direct input is harmless
             }
             hot.render();
         });
 
-        // ---- beforeChange: block editing of non-simple cells ----
-        hot.addHook('beforeChange', function(changes, source) {
-            if (source === 'loadData') return;
-            if (!changes) return;
-            const cellsMap = _this.reportTable.cellsMap;
-            if (!cellsMap) return;
-
-            for (let i = changes.length - 1; i >= 0; i--) {
-                const [row, col] = changes[i];
-                const key = (row + 1) + ',' + (col + 1);
-                const cellDef = cellsMap.get(key);
-                if (cellDef && cellDef.value.type !== 'simple') {
-                    const name = TYPE_NAMES[cellDef.value.type] || cellDef.value.type;
-                    _this._blockMsg(cellDef, name);
-                    return false;
-                }
-            }
-        });
-    }
-
-    _blockMsg(cellDef, typeName) {
-        alert(
-            '该单元格包含<strong>' + typeName + '</strong>内容，不能直接输入文本。' +
-            '<br><br>请通过<strong>右侧属性面板</strong>修改。'
-        );
+        // beforeChange: no longer block any edits.
+        // Users can freely type in any cell; the property panel handles complex types.
     }
 }

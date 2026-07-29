@@ -4,13 +4,13 @@
   <parent>
   	<groupId>com.kingint.ureportplus</groupId>
   	<artifactId>ureportplus-parent</artifactId>
-  	<version>1.0.0</version>
+  	<version>1.0.1</version>
   </parent>
   <dependencies>
   	<dependency>
   		<groupId>com.kingint.ureportplus</groupId>
   		<artifactId>ureportplus-core</artifactId>
-  		<version>1.0.0</version>
+  		<version>1.0.1</version>
   	</dependency>
   </dependencies>
 	<licenses>

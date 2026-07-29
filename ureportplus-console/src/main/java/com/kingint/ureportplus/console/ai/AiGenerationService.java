@@ -11,7 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kingint.ureportplus.definition.CellDefinition;
+import com.kingint.ureportplus.definition.ColumnDefinition;
 import com.kingint.ureportplus.definition.ReportDefinition;
+import com.kingint.ureportplus.definition.RowDefinition;
 import com.kingint.ureportplus.definition.value.AggregateType;
 import com.kingint.ureportplus.definition.value.DatasetValue;
 import com.kingint.ureportplus.definition.value.ExpressionValue;
@@ -19,23 +21,7 @@ import com.kingint.ureportplus.definition.value.SimpleValue;
 import com.kingint.ureportplus.expression.ExpressionUtils;
 
 /**
- * Multi-agent Loop AI generation service.
- *
- * Architecture:
- *   ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
- *   │ Generator    │────▶│ Validator     │────▶│ Applicator  │
- *   │ (generate)   │     │ (verify)      │     │ (apply)     │
- *   └──────┬───────┘     └──────┬────────┘     └─────────────┘
- *          │                    │
- *          │    ┌───────────────┘
- *          │    │ validation fails
- *          ▼    ▼
- *   ┌──────────────────┐
- *   │  Feedback Loop   │  ◀── up to maxRetries iterations
- *   │  (error → retry) │
- *   └──────────────────┘
- *
- * Each agent uses an independent system prompt for unbiased verification.
+ * Multi-agent Loop AI generation service with cell + structural operation support.
  */
 public class AiGenerationService {
 	private static final Logger log = LoggerFactory.getLogger(AiGenerationService.class);
@@ -56,9 +42,8 @@ public class AiGenerationService {
 	 * Multi-agent Loop: Generator → Validator → (retry | apply)
 	 */
 	public AiResult generate(String userPrompt, List<String> selectedCellNames) throws Exception {
-		ReportContextBuilder contextBuilder = new ReportContextBuilder(reportDef);
 		AiConfig config = AiConfig.getInstance();
-		int maxLoops = config.getMaxRetries() + 1; // 1 initial + N retries
+		int maxLoops = config.getMaxRetries() + 1;
 
 		String genSystemPrompt = buildGeneratorPrompt();
 		String valSystemPrompt = buildValidatorPrompt();
@@ -73,13 +58,12 @@ public class AiGenerationService {
 		String lastResponse = null;
 		String lastFeedback = null;
 		List<CellModification> bestModifications = null;
+		List<Map<String, Object>> structuralOps = null;
 		List<String> allWarnings = new ArrayList<String>();
 
-		// === MULTI-AGENT LOOP ===
 		for (int loop = 0; loop < maxLoops; loop++) {
 			log.info("[AI Loop {}/{}] Starting iteration", loop + 1, maxLoops);
 
-			// --- STEP 1: Generator Agent ---
 			String genPrompt = userInput.toString();
 			if (lastFeedback != null) {
 				genPrompt += "\n\n[上一轮验证反馈 — 请修正以下问题]\n" + lastFeedback;
@@ -87,7 +71,6 @@ public class AiGenerationService {
 			lastResponse = client.chat(genSystemPrompt, genPrompt);
 			log.info("[AI Loop {}/{}] Generator produced {} chars", loop + 1, maxLoops, lastResponse.length());
 
-			// --- STEP 2: Parse ---
 			List<CellModification> modifications;
 			try {
 				modifications = parseResponse(lastResponse);
@@ -103,17 +86,12 @@ public class AiGenerationService {
 				continue;
 			}
 
-			// --- STEP 3: Validator Agent (independent) ---
 			String valInput = buildValidatorInput(modifications);
 			String valResponse = client.chat(valSystemPrompt, valInput);
-			log.info("[AI Loop {}/{}] Validator response: {}", loop + 1, maxLoops,
-					valResponse.substring(0, Math.min(200, valResponse.length())));
 
 			ValidationResult valResult = parseValidationResult(valResponse);
 
-			// --- STEP 4: Check validation ---
 			if (valResult != null && valResult.approved) {
-				// --- STEP 5: Syntax + Semantic check ---
 				List<CellModification> validMods = new ArrayList<CellModification>();
 				for (CellModification mod : modifications) {
 					String error = validateModification(mod);
@@ -123,7 +101,6 @@ public class AiGenerationService {
 						validMods.add(mod);
 					}
 				}
-
 				bestModifications = validMods;
 				if (!validMods.isEmpty()) {
 					log.info("[AI Loop {}/{}] APPROVED with {} valid modifications", loop + 1, maxLoops, validMods.size());
@@ -135,7 +112,7 @@ public class AiGenerationService {
 			} else if (valResult != null) {
 				lastFeedback = valResult.feedback;
 				allWarnings.add("Loop " + (loop + 1) + ": validator rejected - " + valResult.feedback);
-				bestModifications = modifications; // keep best so far
+				bestModifications = modifications;
 			} else {
 				lastFeedback = "验证器返回格式异常，请重新生成。";
 				allWarnings.add("Loop " + (loop + 1) + ": validator parse error");
@@ -143,9 +120,14 @@ public class AiGenerationService {
 			}
 		}
 
-		// Build result
+		// Generate structural ops based on validated modifications
+		if (bestModifications != null) {
+			structuralOps = inferStructuralOps(bestModifications);
+		}
+
 		AiResult result = new AiResult();
 		result.modifications = bestModifications != null ? bestModifications : new ArrayList<CellModification>();
+		result.structuralOps = structuralOps != null ? structuralOps : new ArrayList<Map<String, Object>>();
 		result.warnings = allWarnings;
 		result.rawResponse = lastResponse;
 		result.success = !result.modifications.isEmpty();
@@ -192,15 +174,12 @@ public class AiGenerationService {
 	private String buildValidatorInput(List<CellModification> modifications) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("请校验以下 Generator 生成的单元格修改方案:\n\n");
-
-		// Include dataset context for field validation
 		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> datasets = (List<Map<String, Object>>) context.get("datasets");
 		sb.append("可用数据集:\n");
 		for (Map<String, Object> ds : datasets) {
 			sb.append("  - ").append(ds.get("name")).append(": 字段=").append(ds.get("fields")).append("\n");
 		}
-
 		sb.append("\n修改方案:\n");
 		sb.append("```json\n");
 		try {
@@ -280,13 +259,11 @@ public class AiGenerationService {
 				return "表达式语法错误: " + e.getMessage();
 			}
 		}
-
 		if ("dataset".equals(mod.type) && mod.property != null && mod.datasetId != null) {
 			if (!fieldExists(mod.datasetId, mod.property)) {
 				return "数据集 " + mod.datasetId + " 中不存在字段 " + mod.property;
 			}
 		}
-
 		if (mod.aggregate != null) {
 			try {
 				AggregateType.valueOf(mod.aggregate);
@@ -294,7 +271,6 @@ public class AiGenerationService {
 				return "无效的聚合类型: " + mod.aggregate;
 			}
 		}
-
 		return null;
 	}
 
@@ -321,7 +297,7 @@ public class AiGenerationService {
 	}
 
 	// ═══════════════════════════════════════════
-	// Apply Modifications
+	// Apply Cell Modifications
 	// ═══════════════════════════════════════════
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -344,11 +320,11 @@ public class AiGenerationService {
 				}
 				cell.setValue(dv);
 			}
-
 			if (mod.expand != null) {
 				try { cell.setExpand(com.kingint.ureportplus.definition.Expand.valueOf(mod.expand)); } catch (IllegalArgumentException ignored) {}
 			}
 			if (mod.leftParent != null) cell.setLeftParentCellName(mod.leftParent);
+			if (mod.topParent != null) cell.setTopParentCellName(mod.topParent);
 
 			Map<String, Object> applied = new HashMap<String, Object>();
 			applied.put("cellName", cell.getName());
@@ -359,6 +335,203 @@ public class AiGenerationService {
 			appliedCells.add(applied);
 		}
 		return appliedCells;
+	}
+
+	// ═══════════════════════════════════════════
+	// Apply Structural Operations
+	// ═══════════════════════════════════════════
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public List<Map<String, Object>> applyStructuralOps(List<Map<String, Object>> ops) {
+		List<Map<String, Object>> applied = new ArrayList<Map<String, Object>>();
+		for (Map<String, Object> op : ops) {
+			String type = (String) op.get("type");
+			if (type == null) continue;
+
+			try {
+				if ("insertRow".equals(type)) {
+					int rowNum = getInt(op, "rowNumber");
+					int height = getInt(op, "height", 25);
+					// Shift existing rows
+					for (int i = reportDef.getRows().size() - 1; i >= 0; i--) {
+						RowDefinition row = reportDef.getRows().get(i);
+						if (row.getRowNumber() > rowNum) {
+							row.setRowNumber(row.getRowNumber() + 1);
+						}
+					}
+					// Shift cells
+					for (CellDefinition cell : reportDef.getCells()) {
+						if (cell.getRowNumber() > rowNum) {
+							cell.setRowNumber(cell.getRowNumber() + 1);
+						}
+					}
+					RowDefinition newRow = new RowDefinition();
+					newRow.setRowNumber(rowNum + 1);
+					newRow.setHeight(height);
+					reportDef.getRows().add(newRow);
+					applied.add(makeOpResult("insertRow", "row " + (rowNum + 1), (String)op.get("description")));
+				}
+				else if ("insertCol".equals(type)) {
+					int colNum = getInt(op, "colNumber");
+					int width = getInt(op, "width", 100);
+					for (int i = reportDef.getColumns().size() - 1; i >= 0; i--) {
+						ColumnDefinition col = reportDef.getColumns().get(i);
+						if (col.getColumnNumber() > colNum) {
+							col.setColumnNumber(col.getColumnNumber() + 1);
+						}
+					}
+					for (CellDefinition cell : reportDef.getCells()) {
+						if (cell.getColumnNumber() > colNum) {
+							cell.setColumnNumber(cell.getColumnNumber() + 1);
+						}
+					}
+					ColumnDefinition newCol = new ColumnDefinition();
+					newCol.setColumnNumber(colNum + 1);
+					newCol.setWidth(width);
+					reportDef.getColumns().add(newCol);
+					applied.add(makeOpResult("insertCol", "col " + (colNum + 1), (String)op.get("description")));
+				}
+				else if ("deleteRow".equals(type)) {
+					int rowNum = getInt(op, "rowNumber");
+					RowDefinition toRemove = null;
+					for (RowDefinition row : reportDef.getRows()) {
+						if (row.getRowNumber() == rowNum) { toRemove = row; break; }
+					}
+					if (toRemove != null) {
+						reportDef.getRows().remove(toRemove);
+						// Shift remaining rows down
+						for (RowDefinition row : reportDef.getRows()) {
+							if (row.getRowNumber() > rowNum) row.setRowNumber(row.getRowNumber() - 1);
+						}
+						// Remove cells in this row
+						List<CellDefinition> toDelete = new ArrayList<CellDefinition>();
+						for (CellDefinition cell : reportDef.getCells()) {
+							if (cell.getRowNumber() == rowNum) toDelete.add(cell);
+							else if (cell.getRowNumber() > rowNum) cell.setRowNumber(cell.getRowNumber() - 1);
+						}
+						reportDef.getCells().removeAll(toDelete);
+						applied.add(makeOpResult("deleteRow", "row " + rowNum, (String)op.get("description")));
+					}
+				}
+				else if ("deleteCol".equals(type)) {
+					int colNum = getInt(op, "colNumber");
+					ColumnDefinition toRemove = null;
+					for (ColumnDefinition col : reportDef.getColumns()) {
+						if (col.getColumnNumber() == colNum) { toRemove = col; break; }
+					}
+					if (toRemove != null) {
+						reportDef.getColumns().remove(toRemove);
+						for (ColumnDefinition col : reportDef.getColumns()) {
+							if (col.getColumnNumber() > colNum) col.setColumnNumber(col.getColumnNumber() - 1);
+						}
+						List<CellDefinition> toDelete = new ArrayList<CellDefinition>();
+						for (CellDefinition cell : reportDef.getCells()) {
+							if (cell.getColumnNumber() == colNum) toDelete.add(cell);
+							else if (cell.getColumnNumber() > colNum) cell.setColumnNumber(cell.getColumnNumber() - 1);
+						}
+						reportDef.getCells().removeAll(toDelete);
+						applied.add(makeOpResult("deleteCol", "col " + colNum, (String)op.get("description")));
+					}
+				}
+				else if ("setBand".equals(type)) {
+					int rowNum = getInt(op, "rowNumber");
+					String band = (String) op.get("band");
+					for (RowDefinition row : reportDef.getRows()) {
+						if (row.getRowNumber() == rowNum) {
+							row.setBand(com.kingint.ureportplus.definition.Band.valueOf(band));
+							break;
+						}
+					}
+					applied.add(makeOpResult("setBand", "row " + rowNum + "=" + band, (String)op.get("description")));
+				}
+				else if ("setRowHeight".equals(type)) {
+					int rowNum = getInt(op, "rowNumber");
+					int height = getInt(op, "height", 25);
+					for (RowDefinition row : reportDef.getRows()) {
+						if (row.getRowNumber() == rowNum) { row.setHeight(height); break; }
+					}
+					applied.add(makeOpResult("setRowHeight", "row " + rowNum + "=" + height, (String)op.get("description")));
+				}
+				else if ("setColWidth".equals(type)) {
+					int colNum = getInt(op, "colNumber");
+					int width = getInt(op, "width", 100);
+					for (ColumnDefinition col : reportDef.getColumns()) {
+						if (col.getColumnNumber() == colNum) { col.setWidth(width); break; }
+					}
+					applied.add(makeOpResult("setColWidth", "col " + colNum + "=" + width, (String)op.get("description")));
+				}
+			} catch (Exception e) {
+				log.warn("Failed to apply structural op {}: {}", type, e.getMessage());
+			}
+		}
+		return applied;
+	}
+
+	/** Infer structural ops from cell modifications (e.g. if AI targets cells beyond current table bounds). */
+	@SuppressWarnings("unchecked")
+	private List<Map<String, Object>> inferStructuralOps(List<CellModification> mods) {
+		List<Map<String, Object>> ops = new ArrayList<Map<String, Object>>();
+		int maxRow = reportDef.getRows() != null ? reportDef.getRows().size() : 0;
+		int maxCol = reportDef.getColumns() != null ? reportDef.getColumns().size() : 0;
+
+		for (CellModification mod : mods) {
+			if (mod.cellName == null) continue;
+			// Parse cell name like "B5" to get row/col
+			String cellName = mod.cellName.toUpperCase();
+			int split = 0;
+			while (split < cellName.length() && Character.isLetter(cellName.charAt(split))) split++;
+			if (split == 0) continue;
+			try {
+				String colStr = cellName.substring(0, split);
+				int colNum = 0;
+				for (int i = 0; i < colStr.length(); i++) {
+					colNum = colNum * 26 + (colStr.charAt(i) - 'A' + 1);
+				}
+				int rowNum = Integer.parseInt(cellName.substring(split));
+
+				// Add rows if needed
+				while (rowNum > maxRow) {
+					Map<String, Object> op = new HashMap<String, Object>();
+					op.put("type", "insertRow");
+					op.put("rowNumber", maxRow);
+					op.put("height", 25);
+					op.put("description", "自动添加行" + (maxRow + 1) + "以容纳单元格" + cellName);
+					ops.add(op);
+					maxRow++;
+				}
+				// Add columns if needed
+				while (colNum > maxCol) {
+					Map<String, Object> op = new HashMap<String, Object>();
+					op.put("type", "insertCol");
+					op.put("colNumber", maxCol);
+					op.put("width", 100);
+					op.put("description", "自动添加列以容纳单元格" + cellName);
+					ops.add(op);
+					maxCol++;
+				}
+			} catch (NumberFormatException ignored) {}
+		}
+		return ops;
+	}
+
+	private int getInt(Map<String, Object> map, String key) {
+		Object v = map.get(key);
+		if (v instanceof Number) return ((Number) v).intValue();
+		if (v instanceof String) return Integer.parseInt((String) v);
+		return 0;
+	}
+	private int getInt(Map<String, Object> map, String key, int defaultVal) {
+		Object v = map.get(key);
+		if (v instanceof Number) return ((Number) v).intValue();
+		if (v instanceof String) { try { return Integer.parseInt((String) v); } catch (NumberFormatException e) {} }
+		return defaultVal;
+	}
+	private Map<String, Object> makeOpResult(String type, String target, String desc) {
+		Map<String, Object> r = new HashMap<String, Object>();
+		r.put("type", type);
+		r.put("target", target);
+		r.put("description", desc != null ? desc : "");
+		return r;
 	}
 
 	// ═══════════════════════════════════════════
@@ -374,11 +547,13 @@ public class AiGenerationService {
 		public String property;
 		public String expand;
 		public String leftParent;
+		public String topParent;
 		public String explanation;
 	}
 
 	public static class AiResult {
 		public List<CellModification> modifications;
+		public List<Map<String, Object>> structuralOps;
 		public List<String> warnings;
 		public String rawResponse;
 		public boolean success;

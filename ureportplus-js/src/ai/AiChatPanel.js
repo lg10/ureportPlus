@@ -1,6 +1,6 @@
 /**
  * AI Chat Panel — interactive multi-turn conversation with question cards,
- * confidence gauge, and self-test results display.
+ * confidence gauge, self-test results, and full conversation memory.
  */
 import {tableToXml} from '../Utils.js';
 
@@ -9,7 +9,9 @@ export default class AiChatPanel {
         this.context = context;
         this.isProcessing = false;
         this.isOpen = false;
-        this.history = [];
+        this.conversationId = null;
+        this.history = [];          // {role, content} — sent to backend each turn
+        this.lastQuestion = null;   // current question context (question text + option map)
     }
 
     init() {
@@ -43,6 +45,7 @@ export default class AiChatPanel {
                     <span class="ud-ai-status"></span>
                     <span class="ud-ai-conf"></span>
                     <span class="ud-ai-acts">
+                        <button class="ud-ai-btn-rst" title="新对话">↺</button>
                         <button class="ud-ai-btn-min" title="最小化">−</button>
                         <button class="ud-ai-btn-cls" title="关闭">×</button>
                     </span>
@@ -69,7 +72,7 @@ export default class AiChatPanel {
         if (tb.length) { tb.append('<span class="ud-toolbar-sep">'); tb.append(this.toggleBtn); }
 
         // Quick prompts
-        this.sugsEl.html(['添加合计行','按字段分组','添加小计','格式化数字','添加图表']
+        this.sugsEl.html(['添加合计行','按字段分组','添加小计','格式化数字','添加图表','插入空行','添加表头']
             .map(l=>`<span class="ud-ai-chip">${l}</span>`).join(''));
     }
 
@@ -80,6 +83,7 @@ export default class AiChatPanel {
         _.toggleBtn.on('click',()=>_.toggle());
         _.panel.find('.ud-ai-btn-cls').on('click',()=>_.close());
         _.panel.find('.ud-ai-btn-min').on('click',()=>_.toggle());
+        _.panel.find('.ud-ai-btn-rst').on('click',()=>_._reset());
         _.sendBtn.on('click',()=>_._send());
         _.inputEl.on('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();_._send();} });
         _.sugsEl.on('click','.ud-ai-chip',function(){_.inputEl.val($(this).text());_._send();});
@@ -89,6 +93,15 @@ export default class AiChatPanel {
     open() { if(!this.isOpen)this.toggle(); }
     openWithPrompt(p) { this.open(); this.inputEl.val(p); }
     close() { this.panel.slideUp(200); this.isOpen=false; }
+
+    _reset() {
+        this.conversationId = null;
+        this.history = [];
+        this.lastQuestion = null;
+        this.convStarted = false;
+        this.msgsEl.empty();
+        this._addMsg('system', '已开始新对话。AI 现在可以重新了解你的需求。');
+    }
 
     // ═══════════════════ Send / Conversation Loop ═══════════════════
 
@@ -102,6 +115,20 @@ export default class AiChatPanel {
             return;
         }
 
+        // Record in history with full context
+        const userMsg = { role: 'user', content: text };
+        // If user is answering a question, include the option mapping so AI knows what "A" means
+        if (this.lastQuestion && answerOverride) {
+            userMsg.questionContext = {
+                question: this.lastQuestion.question,
+                options: this.lastQuestion.options
+            };
+            userMsg.selectedOption = answerOverride;
+            this.lastQuestion = null;  // consumed
+        }
+        this.history.push(userMsg);
+
+        // Add to DOM (ONLY here, not in _showQuestion handlers)
         this._addMsg('user', text);
         if (!answerOverride) this.inputEl.val('');
         this.isProcessing = true;
@@ -111,20 +138,30 @@ export default class AiChatPanel {
         const cells = this._getSelectedCells();
         const typing = this._typing();
 
-        const url = this.convStarted
+        const url = this.conversationId
             ? window._server + '/ai/next'
             : window._server + '/ai/start';
 
         const _=this;
         $.ajax({ url, type:'POST', contentType:'application/json',
-            data: JSON.stringify({ file, prompt: text, answer: text, selectedCells: cells }),
+            data: JSON.stringify({
+                file,
+                prompt: text,
+                answer: text,
+                selectedCells: cells,
+                conversationId: _.conversationId,
+                history: _.history
+            }),
             success(d) {
                 typing.remove();
                 if (d.error) { _._addMsg('error',d.error); _._done(); return; }
                 _.convStarted = true;
+                // Save conversation ID for future turns
+                if (d.conversationId) _.conversationId = d.conversationId;
                 _._showConfidence(d.confidence || 0);
 
                 if (d.action === 'ask') {
+                    _.lastQuestion = { question: d.question, options: d.options };
                     _._showQuestion(d);
                 } else {
                     _._showResult(d);
@@ -147,9 +184,11 @@ export default class AiChatPanel {
         const _=this;
         let opts = '';
         if (d.options && d.options.length) {
-            opts = d.options.map(o =>
-                `<button class="ud-ai-opt" data-val="${_.escAttr(o.value||o.label)}">${o.label}</button>`
-            ).join('');
+            opts = d.options.map((o, i) => {
+                const label = o.label || o.value || '';
+                const val = o.value || label;
+                return `<button class="ud-ai-opt" data-val="${_.escAttr(val)}" data-label="${_.escAttr(label)}">${String.fromCharCode(65+i)}. ${label}</button>`;
+            }).join('');
         }
         opts += `<div class="ud-ai-opt-custom"><input class="ud-ai-opt-inp" placeholder="或输入自定义回答…"></div>`;
 
@@ -160,8 +199,11 @@ export default class AiChatPanel {
 
         card.find('.ud-ai-opt').on('click', function() {
             const val = $(this).data('val');
+            const label = $(this).data('label');
             card.find('.ud-ai-card-opts').html(`<span class="ud-ai-chosen">✓ ${$(this).text()}</span>`);
-            _._addMsg('user', val);
+            // Pass full label as display text, value as what AI receives
+            // _send will add to DOM with label, send val to backend
+            _._addMsg('user', $(this).text());
             _._send(val);
         });
         card.find('.ud-ai-opt-inp').on('keydown', function(e) {
@@ -180,15 +222,26 @@ export default class AiChatPanel {
         const _=this;
         let mods = '';
         for (let m of (d.modifications||[])) {
-            const icon = {dataset:'📊',expression:'📐',simple:'📝'}[m.type]||'❓';
+            const icon = {dataset:'📊',expression:'📐',simple:'📝',insertRow:'➕',insertCol:'➕',deleteRow:'➖',
+                deleteCol:'➖',mergeCells:'🔗',setStyle:'🎨',setBand:'🏷️'}[m.type]||'❓';
             const val = m.value || (m.datasetId?`${m.datasetId}.${m.aggregate}(${m.property||''})`:'—');
             mods += `<div class="ud-ai-mod">
                 <span class="ud-ai-mod-i">${icon}</span>
-                <strong>${m.cellName}</strong>
+                <strong>${m.cellName||''}</strong>
                 <code>${_.escHtml(val)}</code>
                 ${m.explanation?`<span class="ud-ai-mod-d">${m.explanation}</span>`:''}
                 <span class="ud-ai-mod-t">${m.type}${m.expand?' · '+m.expand:''}${m.leftParent?' · ←'+m.leftParent:''}</span>
             </div>`;
+        }
+        // Show structural operations too
+        if (d.structuralOps && d.structuralOps.length) {
+            for (let op of (d.structuralOps||[])) {
+                mods += `<div class="ud-ai-mod">
+                    <span class="ud-ai-mod-i">🔧</span>
+                    <strong>${op.type}</strong>
+                    <code>${_.escHtml(op.description||'')}</code>
+                </div>`;
+            }
         }
 
         // Self-test results
@@ -200,7 +253,7 @@ export default class AiChatPanel {
                 <div class="ud-ai-tests-hd">🔍 自测: ${passed}/${total} 通过</div>`;
             for (let t of d.testResults) {
                 tests += `<div class="ud-ai-test ${t.passed?'ok':'fail'}">
-                    <strong>${t.cellName}</strong>: ${(t.checks||[]).join(' · ')}
+                    <strong>${t.cellName||t.type||''}</strong>: ${(t.checks||[]).join(' · ')}
                 </div>`;
             }
             tests += '</div>';
@@ -221,7 +274,7 @@ export default class AiChatPanel {
         </div>`);
 
         el.find('.ud-ai-apply').on('click', function() {
-            _._apply(d.modifications, $(this));
+            _._apply(d, $(this));
         });
         el.find('.ud-ai-discard').on('click', function() {
             el.find('.ud-ai-acts2').html('<span class="ud-ai-ccl">已取消</span>');
@@ -237,17 +290,22 @@ export default class AiChatPanel {
 
     // ═══════════════════ Apply ═══════════════════
 
-    _apply(mods, btn) {
+    _apply(d, btn) {
         const _=this;
         const file = window._reportFile || this.context.fileInfo.getFile();
         btn.prop('disabled',true).text('应用中…');
         $.ajax({ url: window._server+'/ai/apply', type:'POST', contentType:'application/json',
-            data: JSON.stringify({ file, modifications: mods }),
-            success(d) {
-                if (d.success) {
-                    btn.replaceWith(`<span class="ud-ai-ok">✓ 已应用 ${d.appliedCells.length} 项</span>`);
+            data: JSON.stringify({
+                file,
+                modifications: d.modifications || [],
+                structuralOps: d.structuralOps || []
+            }),
+            success(resp) {
+                if (resp.success) {
+                    let count = (resp.appliedCells||[]).length + (resp.appliedOps||[]).length;
+                    btn.replaceWith(`<span class="ud-ai-ok">✓ 已应用 ${count} 项</span>`);
                     _._refresh(file);
-                } else btn.replaceWith(`<span class="ud-ai-fail">失败</span>`);
+                } else btn.replaceWith(`<span class="ud-ai-fail">失败: ${resp.error||''}</span>`);
             },
             error() { btn.prop('disabled',false).text('应用修改'); }
         });
@@ -296,6 +354,7 @@ export default class AiChatPanel {
 .ud-ai-acts{display:flex;gap:2px;margin-left:auto}
 .ud-ai-acts button{border:none;background:none;font-size:18px;color:#94a3b8;cursor:pointer;padding:2px 8px;border-radius:4px}
 .ud-ai-acts button:hover{background:#e2e8f0;color:#0f172a}
+.ud-ai-btn-rst{font-size:16px}
 .ud-ai-sugs{display:flex;gap:6px;padding:8px 14px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid #f1f5f9;background:#fafbfc}
 .ud-ai-chip{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;color:#475569;background:#f1f5f9;border:1px solid #e2e8f0;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
 .ud-ai-chip:hover{background:#eef2ff;color:#4f46e5;border-color:#c7d2fe}

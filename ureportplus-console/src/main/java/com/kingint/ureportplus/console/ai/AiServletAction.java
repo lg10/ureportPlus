@@ -6,8 +6,11 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -21,16 +24,23 @@ import com.kingint.ureportplus.definition.ReportDefinition;
 import com.kingint.ureportplus.export.ReportRender;
 
 /**
- * AI-assisted report generation endpoints.
+ * AI-assisted report generation endpoints with conversation session support.
  *
  * Endpoints:
  *   GET  /ai/status    - Check if AI is enabled and configured
  *   GET  /ai/context   - Get report context (datasets, schema, layout)
- *   POST /ai/generate  - Generate cell modifications from natural language
+ *   POST /ai/generate  - Generate cell/structural modifications from NL (single-shot)
+ *   POST /ai/start     - Start interactive multi-turn conversation
+ *   POST /ai/next      - Continue conversation with answer
  *   POST /ai/apply     - Apply confirmed modifications to report
  */
 public class AiServletAction extends RenderPageServletAction {
 	private static final ObjectMapper mapper = new ObjectMapper();
+
+	/** Conversation sessions, keyed by UUID. Expired entries cleaned periodically. */
+	private static final ConcurrentHashMap<String, ConversationSession> sessions = new ConcurrentHashMap<String, ConversationSession>();
+	private static final long SESSION_TTL = 30 * 60 * 1000; // 30 minutes
+	private static long lastCleanup = System.currentTimeMillis();
 
 	@Override
 	public void execute(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -49,7 +59,6 @@ public class AiServletAction extends RenderPageServletAction {
 
 	/**
 	 * GET /ai/status
-	 * Returns AI configuration status.
 	 */
 	public void status(HttpServletRequest req, HttpServletResponse resp) throws ServletException {
 		try {
@@ -67,16 +76,12 @@ public class AiServletAction extends RenderPageServletAction {
 
 	/**
 	 * GET /ai/context?file=xxx
-	 * Returns full report context for AI consumption.
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void context(HttpServletRequest req, HttpServletResponse resp) throws ServletException {
 		try {
 			String file = req.getParameter("_u");
-			if (file == null) {
-				file = req.getParameter("file");
-			}
-
+			if (file == null) file = req.getParameter("file");
 			ReportDefinition reportDef = loadReport(file);
 			if (reportDef == null) {
 				Map<String, Object> error = new HashMap<String, Object>();
@@ -84,20 +89,14 @@ public class AiServletAction extends RenderPageServletAction {
 				writeObjectToJson(resp, error);
 				return;
 			}
-
 			ReportContextBuilder builder = new ReportContextBuilder(reportDef);
 			Map<String, Object> context = builder.buildContext();
-
-			// Include selected cells if provided
 			String selectedParam = req.getParameter("selected");
 			if (selectedParam != null && !selectedParam.isEmpty()) {
 				List<String> selected = new ArrayList<String>();
-				for (String s : selectedParam.split(",")) {
-					selected.add(s.trim());
-				}
+				for (String s : selectedParam.split(",")) selected.add(s.trim());
 				context.put("selectedCells", selected);
 			}
-
 			writeObjectToJson(resp, context);
 		} catch (Exception e) {
 			throw new ServletException(e);
@@ -105,9 +104,7 @@ public class AiServletAction extends RenderPageServletAction {
 	}
 
 	/**
-	 * POST /ai/generate
-	 * Body: { file, prompt, selectedCells }
-	 * Returns: AI-generated modifications with validation warnings.
+	 * POST /ai/generate — single-shot multi-agent generation
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void generate(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -119,22 +116,17 @@ public class AiServletAction extends RenderPageServletAction {
 				writeObjectToJson(resp, error);
 				return;
 			}
-
-			// Read request body
 			String body = readBody(req);
 			Map<String, Object> params = mapper.readValue(body, Map.class);
-
 			String file = (String) params.get("file");
 			String prompt = (String) params.get("prompt");
 			List<String> selectedCells = (List<String>) params.get("selectedCells");
-
 			if (file == null || prompt == null) {
 				Map<String, Object> error = new HashMap<String, Object>();
 				error.put("error", "缺少必要参数: file 和 prompt");
 				writeObjectToJson(resp, error);
 				return;
 			}
-
 			ReportDefinition reportDef = loadReport(file);
 			if (reportDef == null) {
 				Map<String, Object> error = new HashMap<String, Object>();
@@ -142,16 +134,14 @@ public class AiServletAction extends RenderPageServletAction {
 				writeObjectToJson(resp, error);
 				return;
 			}
-
 			AiGenerationService service = new AiGenerationService(reportDef);
 			AiGenerationService.AiResult result = service.generate(prompt, selectedCells);
-
 			Map<String, Object> response = new HashMap<String, Object>();
 			response.put("success", result.success);
 			response.put("modifications", result.modifications);
+			response.put("structuralOps", result.structuralOps);
 			response.put("warnings", result.warnings);
 			response.put("rawResponse", result.rawResponse);
-
 			writeObjectToJson(resp, response);
 		} catch (Exception e) {
 			Map<String, Object> error = new HashMap<String, Object>();
@@ -162,25 +152,23 @@ public class AiServletAction extends RenderPageServletAction {
 
 	/**
 	 * POST /ai/apply
-	 * Body: { file, modifications }
-	 * Applies confirmed modifications and returns updated report XML.
+	 * Body: { file, modifications, structuralOps }
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void apply(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		try {
 			String body = readBody(req);
 			Map<String, Object> params = mapper.readValue(body, Map.class);
-
 			String file = (String) params.get("file");
 			List<Map<String, Object>> modsData = (List<Map<String, Object>>) params.get("modifications");
+			List<Map<String, Object>> opsData = (List<Map<String, Object>>) params.get("structuralOps");
 
-			if (file == null || modsData == null) {
+			if (file == null) {
 				Map<String, Object> error = new HashMap<String, Object>();
-				error.put("error", "缺少必要参数: file 和 modifications");
+				error.put("error", "缺少必要参数: file");
 				writeObjectToJson(resp, error);
 				return;
 			}
-
 			ReportDefinition reportDef = loadReport(file);
 			if (reportDef == null) {
 				Map<String, Object> error = new HashMap<String, Object>();
@@ -189,32 +177,42 @@ public class AiServletAction extends RenderPageServletAction {
 				return;
 			}
 
-			// Parse modifications
-			List<AiGenerationService.CellModification> modifications =
-					new ArrayList<AiGenerationService.CellModification>();
-			for (Map<String, Object> mod : modsData) {
-				AiGenerationService.CellModification cm = new AiGenerationService.CellModification();
-				cm.cellName = (String) mod.get("cellName");
-				cm.type = (String) mod.get("type");
-				cm.value = (String) mod.get("value");
-				cm.datasetId = (String) mod.get("datasetId");
-				cm.aggregate = (String) mod.get("aggregate");
-				cm.property = (String) mod.get("property");
-				cm.expand = (String) mod.get("expand");
-				cm.leftParent = (String) mod.get("leftParent");
-				modifications.add(cm);
-			}
+			List<Map<String, Object>> appliedCells = new ArrayList<Map<String, Object>>();
+			List<Map<String, Object>> appliedOps = new ArrayList<Map<String, Object>>();
 
 			AiGenerationService service = new AiGenerationService(reportDef);
-			List<Map<String, Object>> appliedCells = service.applyModifications(modifications);
 
-			// Save report
+			// Apply cell modifications
+			if (modsData != null && !modsData.isEmpty()) {
+				List<AiGenerationService.CellModification> modifications =
+						new ArrayList<AiGenerationService.CellModification>();
+				for (Map<String, Object> mod : modsData) {
+					AiGenerationService.CellModification cm = new AiGenerationService.CellModification();
+					cm.cellName = (String) mod.get("cellName");
+					cm.type = (String) mod.get("type");
+					cm.value = (String) mod.get("value");
+					cm.datasetId = (String) mod.get("datasetId");
+					cm.aggregate = (String) mod.get("aggregate");
+					cm.property = (String) mod.get("property");
+					cm.expand = (String) mod.get("expand");
+					cm.leftParent = (String) mod.get("leftParent");
+					modifications.add(cm);
+				}
+				appliedCells = service.applyModifications(modifications);
+			}
+
+			// Apply structural operations
+			if (opsData != null && !opsData.isEmpty()) {
+				appliedOps = service.applyStructuralOps(opsData);
+			}
+
+			// Save
 			saveReport(file, reportDef);
 
 			Map<String, Object> response = new HashMap<String, Object>();
 			response.put("success", true);
 			response.put("appliedCells", appliedCells);
-
+			response.put("appliedOps", appliedOps);
 			writeObjectToJson(resp, response);
 		} catch (Exception e) {
 			Map<String, Object> error = new HashMap<String, Object>();
@@ -224,9 +222,9 @@ public class AiServletAction extends RenderPageServletAction {
 	}
 
 	/**
-	 * POST /ai/start
-	 * Start a new interactive conversation. Body: { file, prompt }
-	 * Returns: { action: "ask"|"apply", question, options, confidence, explanation, testResults, modifications }
+	 * POST /ai/start — begin interactive conversation.
+	 * Body: { file, prompt, selectedCells, history }
+	 * Returns: { conversationId, action, question, options, confidence, explanation, modifications, structuralOps, testResults }
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void start(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -238,11 +236,11 @@ public class AiServletAction extends RenderPageServletAction {
 				writeObjectToJson(resp, error);
 				return;
 			}
-
 			String body = readBody(req);
 			Map<String, Object> params = mapper.readValue(body, Map.class);
 			String file = (String) params.get("file");
 			String prompt = (String) params.get("prompt");
+			List<Map<String, Object>> clientHistory = (List<Map<String, Object>>) params.get("history");
 
 			if (file == null || prompt == null) {
 				Map<String, Object> error = new HashMap<String, Object>();
@@ -250,7 +248,6 @@ public class AiServletAction extends RenderPageServletAction {
 				writeObjectToJson(resp, error);
 				return;
 			}
-
 			ReportDefinition reportDef = loadReport(file);
 			if (reportDef == null) {
 				Map<String, Object> error = new HashMap<String, Object>();
@@ -259,23 +256,40 @@ public class AiServletAction extends RenderPageServletAction {
 				return;
 			}
 
+			cleanupSessions();
+
 			AiConversationService conv = new AiConversationService(reportDef);
-			AiConversationService.TurnResult result = conv.processTurn(prompt);
 
-			Map<String, Object> response = new HashMap<String, Object>();
-			response.put("action", result.action);
-			response.put("confidence", result.confidence);
-
-			if (result.isQuestion()) {
-				response.put("question", result.question);
-				response.put("options", result.options);
-			} else {
-				response.put("explanation", result.explanation);
-				response.put("modifications", result.modifications);
-				response.put("testResults", result.testResults);
-				response.put("allTestsPassed", result.allTestsPassed);
+			// Restore client-side history into the conversation
+			if (clientHistory != null) {
+				for (Map<String, Object> h : clientHistory) {
+					String role = (String) h.get("role");
+					String content = (String) h.get("content");
+					if (role != null && content != null) {
+						Map<String, String> entry = new HashMap<String, String>();
+						entry.put("role", role);
+						entry.put("content", content);
+						if (h.containsKey("questionContext")) {
+							entry.put("questionContext", mapper.writeValueAsString(h.get("questionContext")));
+						}
+						if (h.containsKey("selectedOption")) {
+							entry.put("selectedOption", (String) h.get("selectedOption"));
+						}
+						conv.addHistoryEntry(entry);
+					}
+				}
 			}
 
+			AiConversationService.TurnResult result = conv.processTurn(prompt);
+
+			String convId = UUID.randomUUID().toString();
+			ConversationSession session = new ConversationSession();
+			session.service = conv;
+			session.createdAt = System.currentTimeMillis();
+			session.reportFile = file;
+			sessions.put(convId, session);
+
+			Map<String, Object> response = buildTurnResponse(result, convId);
 			writeObjectToJson(resp, response);
 		} catch (Exception e) {
 			Map<String, Object> error = new HashMap<String, Object>();
@@ -285,40 +299,87 @@ public class AiServletAction extends RenderPageServletAction {
 	}
 
 	/**
-	 * POST /ai/next
-	 * Continue conversation with user's answer. Body: { file, answer }
+	 * POST /ai/next — continue conversation.
+	 * Body: { conversationId, file, answer, selectedCells, history }
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void next(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		try {
 			String body = readBody(req);
 			Map<String, Object> params = mapper.readValue(body, Map.class);
+			String convId = (String) params.get("conversationId");
 			String file = (String) params.get("file");
 			String answer = (String) params.get("answer");
+			List<Map<String, Object>> clientHistory = (List<Map<String, Object>>) params.get("history");
 
-			ReportDefinition reportDef = loadReport(file);
-			AiConversationService conv = new AiConversationService(reportDef);
-			AiConversationService.TurnResult result = conv.processTurn(answer);
-
-			Map<String, Object> response = new HashMap<String, Object>();
-			response.put("action", result.action);
-			response.put("confidence", result.confidence);
-
-			if (result.isQuestion()) {
-				response.put("question", result.question);
-				response.put("options", result.options);
-			} else {
-				response.put("explanation", result.explanation);
-				response.put("modifications", result.modifications);
-				response.put("testResults", result.testResults);
-				response.put("allTestsPassed", result.allTestsPassed);
+			// Find existing session or create new one
+			AiConversationService conv = null;
+			if (convId != null) {
+				ConversationSession session = sessions.get(convId);
+				if (session != null) {
+					conv = session.service;
+					session.createdAt = System.currentTimeMillis(); // refresh TTL
+				}
 			}
 
+			if (conv == null) {
+				// Fallback: create new conversation but reload report
+				ReportDefinition reportDef = loadReport(file);
+				if (reportDef == null) {
+					Map<String, Object> error = new HashMap<String, Object>();
+					error.put("error", "Report not found: " + file);
+					writeObjectToJson(resp, error);
+					return;
+				}
+				conv = new AiConversationService(reportDef);
+				convId = UUID.randomUUID().toString();
+				ConversationSession session = new ConversationSession();
+				session.service = conv;
+				session.createdAt = System.currentTimeMillis();
+				session.reportFile = file;
+				sessions.put(convId, session);
+			}
+
+			// Sync client history
+			conv.syncClientHistory(clientHistory);
+
+			AiConversationService.TurnResult result = conv.processTurn(answer);
+			Map<String, Object> response = buildTurnResponse(result, convId);
 			writeObjectToJson(resp, response);
 		} catch (Exception e) {
 			Map<String, Object> error = new HashMap<String, Object>();
 			error.put("error", "Continue error: " + e.getMessage());
 			writeObjectToJson(resp, error);
+		}
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private Map<String, Object> buildTurnResponse(AiConversationService.TurnResult result, String convId) {
+		Map<String, Object> response = new HashMap<String, Object>();
+		response.put("conversationId", convId);
+		response.put("action", result.action);
+		response.put("confidence", result.confidence);
+		if (result.isQuestion()) {
+			response.put("question", result.question);
+			response.put("options", result.options);
+		} else {
+			response.put("explanation", result.explanation);
+			response.put("modifications", result.modifications);
+			response.put("structuralOps", result.structuralOps);
+			response.put("testResults", result.testResults);
+			response.put("allTestsPassed", result.allTestsPassed);
+		}
+		return response;
+	}
+
+	private void cleanupSessions() {
+		long now = System.currentTimeMillis();
+		if (now - lastCleanup < 60000) return; // every 1 min max
+		lastCleanup = now;
+		Iterator<Map.Entry<String, ConversationSession>> it = sessions.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<String, ConversationSession> e = it.next();
+			if (now - e.getValue().createdAt > SESSION_TTL) it.remove();
 		}
 	}
 
@@ -340,34 +401,22 @@ public class AiServletAction extends RenderPageServletAction {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void saveReport(String file, ReportDefinition reportDef) throws Exception {
-		// Rebuild the definition to update parent-child relationships
 		ReportRender reportRender = applicationContext.getBean(ReportRender.class);
 		reportRender.rebuildReportDefinition(reportDef);
-
-		// Update cache
 		CacheUtils.cacheReportDefinition(file, reportDef);
-
-		// Persist using the appropriate ReportProvider
-		Collection<com.kingint.ureportplus.provider.report.ReportProvider> providers =
-				applicationContext.getBeansOfType(
-						com.kingint.ureportplus.provider.report.ReportProvider.class).values();
-
-		for (com.kingint.ureportplus.provider.report.ReportProvider provider : providers) {
-			if (file.startsWith(provider.getPrefix())) {
-				// Note: XML serialization is done client-side; here we just rebuild
-				// The client will call save after applying modifications
-				break;
-			}
-		}
 	}
 
 	private String readBody(HttpServletRequest req) throws Exception {
 		StringBuilder sb = new StringBuilder();
 		BufferedReader reader = new BufferedReader(new InputStreamReader(req.getInputStream(), "UTF-8"));
 		String line;
-		while ((line = reader.readLine()) != null) {
-			sb.append(line);
-		}
+		while ((line = reader.readLine()) != null) sb.append(line);
 		return sb.toString();
+	}
+
+	private static class ConversationSession {
+		AiConversationService service;
+		long createdAt;
+		String reportFile;
 	}
 }
