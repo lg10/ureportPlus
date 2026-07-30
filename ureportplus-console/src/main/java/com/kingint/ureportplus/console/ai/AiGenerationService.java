@@ -26,6 +26,7 @@ import com.kingint.ureportplus.expression.ExpressionUtils;
 public class AiGenerationService {
 	private static final Logger log = LoggerFactory.getLogger(AiGenerationService.class);
 	private static final ObjectMapper mapper = new ObjectMapper();
+	static { mapper.configure(org.codehaus.jackson.JsonGenerator.Feature.ESCAPE_NON_ASCII, false); }
 
 	private final OpenAiClient client;
 	private final ReportDefinition reportDef;
@@ -194,6 +195,10 @@ public class AiGenerationService {
 	// ═══════════════════════════════════════════
 	// Response Parsing
 	// ═══════════════════════════════════════════
+
+	public List<CellModification> parseModifications(String response) throws Exception {
+		return parseResponse(response);
+	}
 
 	@SuppressWarnings("unchecked")
 	private List<CellModification> parseResponse(String response) throws Exception {
@@ -481,7 +486,7 @@ public class AiGenerationService {
 
 	/** Infer structural ops from cell modifications (e.g. if AI targets cells beyond current table bounds). */
 	@SuppressWarnings("unchecked")
-	private List<Map<String, Object>> inferStructuralOps(List<CellModification> mods) {
+	public List<Map<String, Object>> inferStructuralOps(List<CellModification> mods) {
 		List<Map<String, Object>> ops = new ArrayList<Map<String, Object>>();
 		int maxRow = reportDef.getRows() != null ? reportDef.getRows().size() : 0;
 		int maxCol = reportDef.getColumns() != null ? reportDef.getColumns().size() : 0;

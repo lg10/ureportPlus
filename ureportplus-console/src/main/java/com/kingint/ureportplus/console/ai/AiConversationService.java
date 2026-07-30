@@ -28,6 +28,9 @@ import com.kingint.ureportplus.expression.ExpressionUtils;
 public class AiConversationService {
 	private static final Logger log = LoggerFactory.getLogger(AiConversationService.class);
 	private static final ObjectMapper mapper = new ObjectMapper();
+	static {
+		mapper.configure(org.codehaus.jackson.JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
+	}
 
 	private final OpenAiClient client;
 	private final ReportDefinition reportDef;
@@ -150,39 +153,23 @@ public class AiConversationService {
 	}
 
 	private TurnResult forceApply() throws Exception {
-		addStage("🔍", "生成方案 (多智能体循环)");
 		String userPrompt = buildUserPromptFromHistory();
+		addStage("🔍", "生成方案中…");
+		String genSystemPrompt = new ReportContextBuilder(reportDef).buildSystemPrompt(context);
+		String genResponse = client.chat(genSystemPrompt, userPrompt);
 		AiGenerationService genService = new AiGenerationService(reportDef);
-		AiGenerationService.AiResult genResult = genService.generate(userPrompt, null);
+		List<AiGenerationService.CellModification> modifications = genService.parseModifications(genResponse);
+		List<Map<String, Object>> structuralOps = genService.inferStructuralOps(modifications);
 
 		addStage("✅", "方案生成完成",
-			"生成 " + genResult.modifications.size() + " 项修改, " +
-			(genResult.structuralOps != null ? genResult.structuralOps.size() : 0) + " 项结构操作");
-		if (!genResult.warnings.isEmpty()) {
-			addStage("⚠️", "验证中有提示", String.join("; ", genResult.warnings));
-		}
+			"生成 " + modifications.size() + " 项修改, " + structuralOps.size() + " 项结构操作");
 		addStage("🔧", "自测中…");
-
-		List<AiGenerationService.CellModification> modifications = genResult.modifications;
-		List<Map<String, Object>> structuralOps = genResult.structuralOps != null
-			? genResult.structuralOps : new ArrayList<Map<String, Object>>();
 
 		if (modifications.isEmpty() && structuralOps.isEmpty()) {
 			return TurnResult.question("无法生成有效的修改方案，请尝试更具体的描述。", null);
 		}
 
 		List<Map<String, Object>> testResults = selfTest(modifications);
-		if (genResult.warnings != null && !genResult.warnings.isEmpty()) {
-			for (String w : genResult.warnings) {
-				Map<String, Object> wr = new HashMap<String, Object>();
-				wr.put("cellName", "system");
-				List<String> checks = new ArrayList<String>();
-				checks.add(w);
-				wr.put("checks", checks);
-				wr.put("passed", true);
-				testResults.add(wr);
-			}
-		}
 
 		TurnResult tr = new TurnResult();
 		tr.action = "apply";

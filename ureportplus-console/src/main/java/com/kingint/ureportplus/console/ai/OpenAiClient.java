@@ -26,6 +26,8 @@ public class OpenAiClient {
 
 	public OpenAiClient() {
 		this.config = AiConfig.getInstance();
+		// Disable ASCII escaping so Chinese chars stay as-is in JSON
+		mapper.configure(org.codehaus.jackson.JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
 	}
 
 	/**
@@ -69,8 +71,8 @@ public class OpenAiClient {
 		conn.setRequestMethod("POST");
 		conn.setRequestProperty("Content-Type", "application/json");
 		conn.setRequestProperty("Authorization", "Bearer " + config.getApiKey());
-		conn.setConnectTimeout(30000);
-		conn.setReadTimeout(60000);
+		conn.setConnectTimeout(10000);
+		conn.setReadTimeout(120000);
 
 		try {
 			OutputStream os = conn.getOutputStream();

@@ -80,7 +80,10 @@ public class FileReportProvider implements ReportProvider,ApplicationContextAwar
 	public List<ReportFile> getReportFiles() {
 		File file=new File(fileStoreDir);
 		List<ReportFile> list=new ArrayList<ReportFile>();
-		for(File f:file.listFiles()){
+		File[] files = file.listFiles();
+		if (files == null) return list;
+		for(File f : files){
+			if (f.isDirectory()) continue; // skip subdirectories like examples/
 			Calendar calendar=Calendar.getInstance();
 			Date updateDate = new Date(f.lastModified());
 			Date createDate = updateDate;

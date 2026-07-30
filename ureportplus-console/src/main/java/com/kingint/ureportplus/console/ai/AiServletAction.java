@@ -36,6 +36,7 @@ import com.kingint.ureportplus.export.ReportRender;
  */
 public class AiServletAction extends RenderPageServletAction {
 	private static final ObjectMapper mapper = new ObjectMapper();
+	static { mapper.configure(org.codehaus.jackson.JsonGenerator.Feature.ESCAPE_NON_ASCII, false); }
 
 	/** Conversation sessions, keyed by UUID. Expired entries cleaned periodically. */
 	private static final ConcurrentHashMap<String, ConversationSession> sessions = new ConcurrentHashMap<String, ConversationSession>();
