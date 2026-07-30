@@ -165,7 +165,7 @@ export function tableToXml(context){
                     throw msg;
                 }
                 const mappingType=value.mappingType || 'simple';
-                cellXml+=`<dataset-value dataset-name="${encode(value.datasetName)}" aggregate="${value.aggregate}" property="${value.property}" order="${value.order}" mapping-type="${mappingType}"`;
+                cellXml+=`<dataset-value dataset-name="${encode(value.datasetName)}" aggregate="${value.aggregate}" property="${value.property}" order="${value.order || 'none'}" mapping-type="${mappingType}"`;
                 if(mappingType==='dataset'){
                     cellXml+=` mapping-dataset="${value.mappingDataset}" mapping-key-property="${value.mappingKeyProperty}" mapping-value-property="${value.mappingValueProperty}"`;
                 }

@@ -27,7 +27,38 @@ export default class PropertyPanel{
         this.context=context;
     }
     buildPanel(){
-        this.panel=$(`<div style="margin: 8px"></div>`);
+        if (!$('#ud-prop-css').length) {
+            $('<style id="ud-prop-css">').text(`
+                .ud-prop-panel * { box-sizing: border-box; }
+                .ud-prop-panel { padding: 4px 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; font-size:12px; color:#374151; }
+                .ud-prop-panel fieldset { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:10px 12px; margin:0 0 8px 0; max-width:100%; overflow:hidden; }
+                .ud-prop-panel legend { width:auto; font-size:12px; font-weight:600; color:#374151; padding:0 6px; margin:0; border:none; }
+                .ud-prop-panel label { font-size:12px; font-weight:500; color:#6b7280; margin-bottom:2px; display:block; white-space:nowrap; }
+                .ud-prop-panel .form-group { margin-bottom:6px; }
+                .ud-prop-panel .form-control { height:28px; padding:3px 8px; font-size:12px; border:1px solid #d1d5db; border-radius:6px; color:#111827; background:#fff; max-width:100%; }
+                .ud-prop-panel .form-control:focus { border-color:#4f46e5; box-shadow:0 0 0 2px rgba(79,70,229,.12); outline:none; }
+                .ud-prop-panel select.form-control { padding:2px 6px; cursor:pointer; }
+                .ud-prop-panel .btn { font-size:12px; font-weight:500; padding:4px 12px; border-radius:6px; }
+                .ud-prop-panel .btn-primary { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+                .ud-prop-panel .btn-primary:hover { background:#4338ca; }
+                .ud-prop-panel .btn-default { background:#fff; border:1px solid #d1d5db; color:#374151; }
+                .ud-prop-panel .btn-default:hover { background:#f9fafb; }
+                .ud-prop-panel .btn-sm { font-size:11px; padding:3px 8px; }
+                .ud-prop-panel table { width:100%; border-collapse:collapse; }
+                .ud-prop-panel table td { padding:3px 4px; font-size:12px; }
+                .ud-prop-panel table input[type=text], .ud-prop-panel table input[type=number] { width:100%; height:26px; padding:2px 6px; font-size:12px; border:1px solid #d1d5db; border-radius:5px; box-sizing:border-box; }
+                .ud-prop-panel table input[type=radio], .ud-prop-panel table input[type=checkbox] { margin:0 4px 0 0; accent-color:#4f46e5; }
+                .ud-prop-panel .checkbox-inline { padding-left:2px; margin-right:8px; font-size:12px; }
+                .ud-prop-panel .input-group { display:flex; max-width:100%; }
+                .ud-prop-panel .input-group .form-control { flex:1; }
+                .ud-prop-panel .input-group-btn { flex-shrink:0; }
+                .ud-prop-panel hr { border:none; border-top:1px solid #e5e7eb; margin:6px 0; }
+                .ud-prop-panel input.form-control { width:100% !important; max-width:100% !important; box-sizing:border-box !important; }
+                .ud-prop-panel select.form-control { width:100% !important; max-width:100% !important; }
+                .ud-prop-panel textarea.form-control { width:100% !important; max-width:100% !important; box-sizing:border-box !important; }
+            `).appendTo('head');
+        }
+        this.panel=$(`<div class="ud-prop-panel" style="margin:4px 8px"></div>`);
         this._buildParentCell();
         this._buildRenderer();
         this._buildLinkConfig();
@@ -67,7 +98,7 @@ export default class PropertyPanel{
         <legend style="width: auto;margin-bottom: 1px;border-bottom:none;font-size: inherit;color: #4b4b4b;">${window.i18n.property.prop.linkConfig}</legend></fieldset>`);
         const urlGroup=$(`<div class="form-group" style="margin-bottom:8px"><label>URL(<span style="font-size: 12px;color: #747474" title="如:$\{# == '1' ? 'a.jsp' : 'b.jsp'}">支持表达式,表达式定义在$\{...}中</span>)：</label></div>`);
         this.linkGroup.append(urlGroup);
-        this.linkEditor=$(`<input type="text" placeholder="如:$\{# == '1' ? 'a.jsp' : 'b.jsp'}" class="form-control" style="width: 360px;padding: 3px;font-size: 12px;height: 25px;">`);
+        this.linkEditor=$(`<input type="text" placeholder="如:$\{# == '1' ? 'a.jsp' : 'b.jsp'}" class="form-control" style="width:100%;height:28px;">`);
         urlGroup.append(this.linkEditor);
         this.linkEditor.change(function(){
             _this.cellDef.linkUrl=$(this).val();
@@ -75,7 +106,7 @@ export default class PropertyPanel{
         });
         const configGroup=$(`<div class="form-group" style="margin-bottom:0px"><label>${window.i18n.property.prop.target}</label></div>`);
         this.linkGroup.append(configGroup);
-        this.targetSelect=$(`<select class="form-control" style="display: inline-block;width: 160px;font-size: 12px;height: 25px;padding: 3px;">
+        this.targetSelect=$(`<select class="form-control" style="display: inline-block;width:100%;height:28px;">
             <option value="_blank">${window.i18n.property.prop.newWindow}</option>
             <option value="_self">${window.i18n.property.prop.currentWindow}</option>
             <option value="_parent">${window.i18n.property.prop.parentWindow}</option>
@@ -107,7 +138,7 @@ export default class PropertyPanel{
     _buildCellType(){
         this.typeGruop=$(`<div class="form-group" style="margin-bottom:10px;margin-top: 10px;"><label>${window.i18n.property.prop.cellType}</label></div>`);
         const radioName="__cell_value_type";
-        this.typeSelect=$(`<select class="form-control" style="display: inline-block;width:280px;padding: 3px;font-size: 12px;height: 25px;">
+        this.typeSelect=$(`<select class="form-control" style="display: inline-block;width:100%;padding: 3px;font-size: 12px;height: 25px;">
             <option value="simple">${window.i18n.property.prop.text}</option>
             <option value="expression">${window.i18n.property.prop.expr}</option>
             <option value="dataset">${window.i18n.property.prop.dataset}</option>
@@ -206,9 +237,9 @@ export default class PropertyPanel{
         this.customLeftRadio=$(`<label class="checkbox-inline" style="padding-left: 2px"><input type="radio" class="__left_p_radio" name="__left_p_radio" value="custom">${window.i18n.property.prop.custom}</label>`);
         leftParentGroup.append(this.customLeftRadio);
 
-        this.leftParentCellNameSelect=$(`<select class="form-control" disabled style="width: 90px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px"></select>`);
+        this.leftParentCellNameSelect=$(`<select class="form-control" disabled style="width: 70px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px"></select>`);
         leftParentGroup.append(this.leftParentCellNameSelect);
-        this.leftParentRowNumberSelect=$(`<select class="form-control" disabled style="width: 66px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px"></select>`);
+        this.leftParentRowNumberSelect=$(`<select class="form-control" disabled style="width: 50px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px"></select>`);
         leftParentGroup.append(this.leftParentRowNumberSelect);
         const _this=this;
         this.leftParentCellNameSelect.change(function(){
@@ -255,9 +286,9 @@ export default class PropertyPanel{
         this.customTopRadio=$(`<label class="checkbox-inline" style="padding-left: 2px"><input type="radio" name="__top_p_radio" value="custom">${window.i18n.property.prop.custom}</label>`);
         topParentGroup.append(this.customTopRadio);
 
-        this.topParentCellNameSelect=$(`<select class="form-control" disabled style="width: 90px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px;"></select>`);
+        this.topParentCellNameSelect=$(`<select class="form-control" disabled style="width: 70px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px;"></select>`);
         topParentGroup.append(this.topParentCellNameSelect);
-        this.topParentRowNumberSelect=$(`<select class="form-control" disabled style="width: 66px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px"></select>`);
+        this.topParentRowNumberSelect=$(`<select class="form-control" disabled style="width: 50px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px"></select>`);
         topParentGroup.append(this.topParentRowNumberSelect);
 
         this.topParentCellNameSelect.change(function(){
@@ -350,9 +381,9 @@ export default class PropertyPanel{
     }
     _buildRenderer(){
         this.rendererGroup=$(`<div class="form-group" style="margin-bottom:6px"><label>${window.i18n.property.prop.renderBean}</label></div>`);
-        const rendererBeanEditorGroup=$(`<div class="input-group" style="width: 290px;display: inline-block;height: 22px;"></div>`);
+        const rendererBeanEditorGroup=$(`<div class="input-group" style="max-width:100%;display:flex;"></div>`);
         this.rendererGroup.append(rendererBeanEditorGroup);
-        this.rendererBeanEditor=$(`<input type="text" class="form-control" style="width: 204px">`);
+        this.rendererBeanEditor=$(`<input type="text" class="form-control" style="flex:1;min-width:0">`);
         rendererBeanEditorGroup.append(this.rendererBeanEditor);
         const addon=$(`<span class="input-group-btn"></span>`);
         const selectButton=$(`<button type="button" class="btn btn-default">${window.i18n.property.prop.selectBean}</button>`);

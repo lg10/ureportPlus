@@ -120,7 +120,7 @@ public class AiServletAction extends RenderPageServletAction {
 			Map<String, Object> params = mapper.readValue(body, Map.class);
 			String file = (String) params.get("file");
 			String prompt = (String) params.get("prompt");
-			List<String> selectedCells = (List<String>) params.get("selectedCells");
+				List<String> selectedCells = (List<String>) params.get("selectedCells");
 			if (file == null || prompt == null) {
 				Map<String, Object> error = new HashMap<String, Object>();
 				error.put("error", "缺少必要参数: file 和 prompt");
@@ -154,78 +154,6 @@ public class AiServletAction extends RenderPageServletAction {
 	 * POST /ai/apply
 	 * Body: { file, modifications, structuralOps }
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public void apply(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		try {
-			String body = readBody(req);
-			Map<String, Object> params = mapper.readValue(body, Map.class);
-			String file = (String) params.get("file");
-			List<Map<String, Object>> modsData = (List<Map<String, Object>>) params.get("modifications");
-			List<Map<String, Object>> opsData = (List<Map<String, Object>>) params.get("structuralOps");
-
-			if (file == null) {
-				Map<String, Object> error = new HashMap<String, Object>();
-				error.put("error", "缺少必要参数: file");
-				writeObjectToJson(resp, error);
-				return;
-			}
-			ReportDefinition reportDef = loadReport(file);
-			if (reportDef == null) {
-				Map<String, Object> error = new HashMap<String, Object>();
-				error.put("error", "Report not found: " + file);
-				writeObjectToJson(resp, error);
-				return;
-			}
-
-			List<Map<String, Object>> appliedCells = new ArrayList<Map<String, Object>>();
-			List<Map<String, Object>> appliedOps = new ArrayList<Map<String, Object>>();
-
-			AiGenerationService service = new AiGenerationService(reportDef);
-
-			// Apply cell modifications
-			if (modsData != null && !modsData.isEmpty()) {
-				List<AiGenerationService.CellModification> modifications =
-						new ArrayList<AiGenerationService.CellModification>();
-				for (Map<String, Object> mod : modsData) {
-					AiGenerationService.CellModification cm = new AiGenerationService.CellModification();
-					cm.cellName = (String) mod.get("cellName");
-					cm.type = (String) mod.get("type");
-					cm.value = (String) mod.get("value");
-					cm.datasetId = (String) mod.get("datasetId");
-					cm.aggregate = (String) mod.get("aggregate");
-					cm.property = (String) mod.get("property");
-					cm.expand = (String) mod.get("expand");
-					cm.leftParent = (String) mod.get("leftParent");
-					modifications.add(cm);
-				}
-				appliedCells = service.applyModifications(modifications);
-			}
-
-			// Apply structural operations
-			if (opsData != null && !opsData.isEmpty()) {
-				appliedOps = service.applyStructuralOps(opsData);
-			}
-
-			// Save
-			saveReport(file, reportDef);
-
-			Map<String, Object> response = new HashMap<String, Object>();
-			response.put("success", true);
-			response.put("appliedCells", appliedCells);
-			response.put("appliedOps", appliedOps);
-			writeObjectToJson(resp, response);
-		} catch (Exception e) {
-			Map<String, Object> error = new HashMap<String, Object>();
-			error.put("error", "Apply failed: " + e.getMessage());
-			writeObjectToJson(resp, error);
-		}
-	}
-
-	/**
-	 * POST /ai/start — begin interactive conversation.
-	 * Body: { file, prompt, selectedCells, history }
-	 * Returns: { conversationId, action, question, options, confidence, explanation, modifications, structuralOps, testResults }
-	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void start(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		try {
@@ -240,6 +168,7 @@ public class AiServletAction extends RenderPageServletAction {
 			Map<String, Object> params = mapper.readValue(body, Map.class);
 			String file = (String) params.get("file");
 			String prompt = (String) params.get("prompt");
+				List<String> selectedCells = (List<String>) params.get("selectedCells");
 			List<Map<String, Object>> clientHistory = (List<Map<String, Object>>) params.get("history");
 
 			if (file == null || prompt == null) {
@@ -258,29 +187,17 @@ public class AiServletAction extends RenderPageServletAction {
 
 			cleanupSessions();
 
+			// Setup streaming response
+			resp.setContentType("text/plain; charset=UTF-8");
+			resp.setHeader("Cache-Control", "no-cache");
+			resp.setHeader("X-Content-Type-Options", "nosniff");
+			java.io.PrintWriter streamWriter = resp.getWriter();
+
 			AiConversationService conv = new AiConversationService(reportDef);
+			conv.setStreamOutput(streamWriter);
+			conv.syncClientHistory(clientHistory);
 
-			// Restore client-side history into the conversation
-			if (clientHistory != null) {
-				for (Map<String, Object> h : clientHistory) {
-					String role = (String) h.get("role");
-					String content = (String) h.get("content");
-					if (role != null && content != null) {
-						Map<String, String> entry = new HashMap<String, String>();
-						entry.put("role", role);
-						entry.put("content", content);
-						if (h.containsKey("questionContext")) {
-							entry.put("questionContext", mapper.writeValueAsString(h.get("questionContext")));
-						}
-						if (h.containsKey("selectedOption")) {
-							entry.put("selectedOption", (String) h.get("selectedOption"));
-						}
-						conv.addHistoryEntry(entry);
-					}
-				}
-			}
-
-			AiConversationService.TurnResult result = conv.processTurn(prompt);
+			AiConversationService.TurnResult result = conv.processTurn(prompt, selectedCells);
 
 			String convId = UUID.randomUUID().toString();
 			ConversationSession session = new ConversationSession();
@@ -289,11 +206,13 @@ public class AiServletAction extends RenderPageServletAction {
 			session.reportFile = file;
 			sessions.put(convId, session);
 
-			Map<String, Object> response = buildTurnResponse(result, convId);
-			writeObjectToJson(resp, response);
+			Map<String, Object> done = buildTurnResponse(result, convId);
+		done.put("type", "done");
+			resp.getWriter().write(mapper.writeValueAsString(done) + "\n");
+		resp.getWriter().flush();
 		} catch (Exception e) {
 			Map<String, Object> error = new HashMap<String, Object>();
-			error.put("error", "Conversation error: " + e.getMessage());
+			error.put("type","error"); error.put("error", "Conversation error: " + e.getMessage());
 			writeObjectToJson(resp, error);
 		}
 	}
@@ -310,6 +229,7 @@ public class AiServletAction extends RenderPageServletAction {
 			String convId = (String) params.get("conversationId");
 			String file = (String) params.get("file");
 			String answer = (String) params.get("answer");
+				List<String> selectedCells = (List<String>) params.get("selectedCells");
 			List<Map<String, Object>> clientHistory = (List<Map<String, Object>>) params.get("history");
 
 			// Find existing session or create new one
@@ -343,9 +263,11 @@ public class AiServletAction extends RenderPageServletAction {
 			// Sync client history
 			conv.syncClientHistory(clientHistory);
 
-			AiConversationService.TurnResult result = conv.processTurn(answer);
-			Map<String, Object> response = buildTurnResponse(result, convId);
-			writeObjectToJson(resp, response);
+			AiConversationService.TurnResult result = conv.processTurn(answer, selectedCells);
+			Map<String, Object> done = buildTurnResponse(result, convId);
+		done.put("type", "done");
+			resp.getWriter().write(mapper.writeValueAsString(done) + "\n");
+		resp.getWriter().flush();
 		} catch (Exception e) {
 			Map<String, Object> error = new HashMap<String, Object>();
 			error.put("error", "Continue error: " + e.getMessage());
@@ -359,6 +281,8 @@ public class AiServletAction extends RenderPageServletAction {
 		response.put("conversationId", convId);
 		response.put("action", result.action);
 		response.put("confidence", result.confidence);
+		response.put("understanding", result.understanding);
+		response.put("stages", result.stages);
 		if (result.isQuestion()) {
 			response.put("question", result.question);
 			response.put("options", result.options);
@@ -404,6 +328,141 @@ public class AiServletAction extends RenderPageServletAction {
 		ReportRender reportRender = applicationContext.getBean(ReportRender.class);
 		reportRender.rebuildReportDefinition(reportDef);
 		CacheUtils.cacheReportDefinition(file, reportDef);
+	}
+
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public void apply(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		try {
+			String body = readBody(req);
+			Map<String, Object> params = mapper.readValue(body, Map.class);
+			String file = (String) params.get("file");
+			List<Map<String, Object>> modsData = (List<Map<String, Object>>) params.get("modifications");
+			List<Map<String, Object>> opsData = (List<Map<String, Object>>) params.get("structuralOps");
+
+			if (file == null) {
+				Map<String, Object> error = new HashMap<String, Object>();
+				error.put("error", "缺少必要参数: file");
+				writeObjectToJson(resp, error);
+				return;
+			}
+			ReportDefinition reportDef = loadReport(file);
+			if (reportDef == null) {
+				Map<String, Object> error = new HashMap<String, Object>();
+				error.put("error", "Report not found: " + file);
+				writeObjectToJson(resp, error);
+				return;
+			}
+
+			// Phase 1: Record original counts for structural verification
+			int origRowCount = reportDef.getRows() != null ? reportDef.getRows().size() : 0;
+			int origColCount = reportDef.getColumns() != null ? reportDef.getColumns().size() : 0;
+
+			List<Map<String, Object>> appliedCells = new ArrayList<Map<String, Object>>();
+			List<Map<String, Object>> appliedOps = new ArrayList<Map<String, Object>>();
+			List<String> verifyErrors = new ArrayList<String>();
+
+			AiGenerationService service = new AiGenerationService(reportDef);
+
+			// Phase 2: Apply cell mods
+			if (modsData != null && !modsData.isEmpty()) {
+				List<AiGenerationService.CellModification> modifications =
+					new ArrayList<AiGenerationService.CellModification>();
+				for (Map<String, Object> mod : modsData) {
+					AiGenerationService.CellModification cm = new AiGenerationService.CellModification();
+					cm.cellName = (String) mod.get("cellName");
+					cm.type = (String) mod.get("type");
+					cm.value = (String) mod.get("value");
+					cm.datasetId = (String) mod.get("datasetId");
+					cm.aggregate = (String) mod.get("aggregate");
+					cm.property = (String) mod.get("property");
+					cm.expand = (String) mod.get("expand");
+					cm.leftParent = (String) mod.get("leftParent");
+					modifications.add(cm);
+				}
+				appliedCells = service.applyModifications(modifications);
+				rebuildDef(reportDef);
+			}
+
+			// Phase 3: Apply structural ops
+			if (opsData != null && !opsData.isEmpty()) {
+				appliedOps = service.applyStructuralOps(opsData);
+			}
+
+			// Phase 4: Verify
+			for (Map<String, Object> applied : appliedCells) {
+				String cellName = (String) applied.get("cellName");
+				String expectedType = (String) applied.get("type");
+				com.kingint.ureportplus.definition.CellDefinition cell = service.findCellByName(cellName);
+				if (cell == null) {
+					verifyErrors.add(cellName + ": 修改后不存在");
+					continue;
+				}
+				if (cell.getValue() == null) {
+					verifyErrors.add(cellName + ": 值为空");
+					continue;
+				}
+				String actualType = cell.getValue().getType().name().toLowerCase();
+				if (!actualType.equals(expectedType)) {
+					verifyErrors.add(cellName + ": 期望=" + expectedType + " 实际=" + actualType);
+				}
+			}
+			int newRowCount = reportDef.getRows() != null ? reportDef.getRows().size() : 0;
+			int newColCount = reportDef.getColumns() != null ? reportDef.getColumns().size() : 0;
+			for (Map<String, Object> op : appliedOps) {
+				String opType = (String) op.get("type");
+				if ("insertRow".equals(opType) && newRowCount <= origRowCount)
+					verifyErrors.add("insertRow: 行数未增 (" + origRowCount + "->" + newRowCount + ")");
+				if ("deleteRow".equals(opType) && newRowCount >= origRowCount)
+					verifyErrors.add("deleteRow: 行数未减 (" + origRowCount + "->" + newRowCount + ")");
+				if ("insertCol".equals(opType) && newColCount <= origColCount)
+					verifyErrors.add("insertCol: 列数未增 (" + origColCount + "->" + newColCount + ")");
+				if ("deleteCol".equals(opType) && newColCount >= origColCount)
+					verifyErrors.add("deleteCol: 列数未减 (" + origColCount + "->" + newColCount + ")");
+			}
+
+			// Phase 5: Commit or rollback
+			if (verifyErrors.isEmpty()) {
+				persistReport(file, reportDef);
+				Map<String, Object> response = new HashMap<String, Object>();
+				response.put("success", true);
+				response.put("verified", true);
+				response.put("appliedCells", appliedCells);
+				response.put("appliedOps", appliedOps);
+				writeObjectToJson(resp, response);
+			} else {
+				// Rollback: reload original from disk (memory was not persisted)
+				ReportDefinition original = loadReport(file);
+				if (original != null) {
+					CacheUtils.cacheReportDefinition(file, original);
+					com.kingint.ureportplus.console.cache.TempObjectCache.putObject(file, original);
+				}
+				Map<String, Object> response = new HashMap<String, Object>();
+				response.put("success", false);
+				response.put("error", "验证失败，已回滚: " + String.join("; ", verifyErrors));
+				response.put("verifyErrors", verifyErrors);
+				response.put("appliedCells", appliedCells);
+				response.put("appliedOps", appliedOps);
+				writeObjectToJson(resp, response);
+			}
+		} catch (Exception e) {
+			Map<String, Object> error = new HashMap<String, Object>();
+			error.put("error", "Apply failed: " + e.getMessage());
+			writeObjectToJson(resp, error);
+		}
+	}
+
+	private void rebuildDef(ReportDefinition reportDef) throws Exception {
+		ReportRender reportRender = applicationContext.getBean(ReportRender.class);
+		reportRender.rebuildReportDefinition(reportDef);
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private void persistReport(String file, ReportDefinition reportDef) throws Exception {
+		// Cache in memory
+		CacheUtils.cacheReportDefinition(file, reportDef);
+		// Put into TempObjectCache so /designer/loadReport picks it up
+		com.kingint.ureportplus.console.cache.TempObjectCache.putObject(file, reportDef);
 	}
 
 	private String readBody(HttpServletRequest req) throws Exception {

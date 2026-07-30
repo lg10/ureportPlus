@@ -29,7 +29,8 @@ import SearchFormSwitchTool from './tools/SearchFormSwitchTool.js';
 import DatasourcePanel from './panel/DatasourcePanel.js';
 import PropertyPanel from './panel/PropertyPanel.js';
 
-import {undoManager} from './Utils.js';
+import {undoManager,tableToXml,resetDirty} from './Utils.js';
+import {alert} from './MsgBox.js';
 import PrintLine from './PrintLine.js';
 import FileInfo from './FileInfo.js';
 import {renderRowHeader} from './table/HeaderUtils.js';
@@ -73,7 +74,82 @@ export default class UReportPlusDesigner{
             // Initialize AI chat panel
             _this.aiChatPanel = new AiChatPanel(_this.context);
             _this.aiChatPanel.init();
+
+            // Ctrl+S / Cmd+S save
+            var handleSaveKey = function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.keyCode === 83) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    _this._quickSave();
+                    return false;
+                }
+            };
+            // Capture phase on both document and body to beat all other handlers
+            document.addEventListener('keydown', handleSaveKey, true);
+            if (document.body) document.body.addEventListener('keydown', handleSaveKey, true);
+            // Also try jQuery on window as fallback
+            $(window).on('keydown.save', handleSaveKey);
+
+            // Track save status (no auto-save)
+            $('<style>').text(
+                '.ud-save-status{font-size:11px;padding:3px 10px;border-radius:99px;margin-left:12px;font-weight:500;display:inline-flex;align-items:center}' +
+                '.ud-save-status.saved{color:#16a34a;background:#f0fdf4;border:1px solid #bbf7d0}' +
+                '.ud-save-status.unsaved{color:#d97706;background:#fffbeb;border:1px solid #fde68a}'
+            ).appendTo('head');
+            _this._dirty = false;
+            _this._saveStatusEl = $('<span class="ud-save-status saved" title="Ctrl+S 保存">● 已保存</span>');
+            $('.ud-toolbar').append(_this._saveStatusEl);
+            // Push report file name and save status to the rightmost
+            $('.ud-toolbar').css('display', 'flex').css('align-items', 'center');
+            $('.ud-toolbar .ud-save-status').css('margin-left', 'auto');
+            _this.context.hot.addHook('afterChange', function(changes, source) {
+                if (source === 'loadData' || !changes) return;
+                _this._dirty = true;
+                _this._saveStatusEl.text('● 未保存').removeClass('saved').addClass('unsaved');
+            });
         });
+    }
+
+    _quickSave(silent) {
+        const _this = this;
+        if (!window._reportFile) return;
+        const content = tableToXml(this.context);
+        window._lastXml = content; // sync for inline Cmd+S handler
+        const saveIcon = $('.ureportplus-save').first();
+        $.ajax({
+            url: window._server + '/designer/saveReportFile',
+            data: { content, file: window._reportFile },
+            type: 'POST',
+            success() {
+                resetDirty();
+                _this._dirty = false;
+                _this._saveStatusEl.text('● 已保存').removeClass('unsaved').addClass('saved');
+                saveIcon.css('color', '#16a34a').attr('title', '已保存');
+                setTimeout(() => saveIcon.css('color', '#0e90d2').attr('title', '保存 (Ctrl+S)'), 2000);
+                _this._toast('✓ 已保存');
+            },
+            error(xhr) {
+                const msg = xhr && xhr.responseText ? xhr.responseText.substring(0, 80) : '保存失败';
+                saveIcon.css('color', '#dc2626').attr('title', msg);
+                setTimeout(() => saveIcon.css('color', '#0e90d2').attr('title', '保存 (Ctrl+S)'), 5000);
+                _this._toast('✕ 保存失败');
+            }
+        });
+    }
+
+    _toast(msg) {
+        if (!$('#ud-toast-css').length) {
+            $('<style id="ud-toast-css">').text(
+                '.ud-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;' +
+                'background:#16a34a;color:#fff;padding:8px 24px;border-radius:8px;font-size:14px;font-weight:500;' +
+                'box-shadow:0 4px 12px rgba(0,0,0,.15);animation:udToastIn .3s ease;pointer-events:none}' +
+                '@keyframes udToastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}' +
+                '.ud-toast-out{opacity:0;transition:opacity .3s}'
+            ).appendTo('head');
+        }
+        const el = $('<div class="ud-toast">' + msg + '</div>');
+        $('body').append(el);
+        setTimeout(() => { el.addClass('ud-toast-out'); setTimeout(() => el.remove(), 300); }, 1500);
     }
     buildPropertyPanel(){
         const propContainerId='_prop_container';

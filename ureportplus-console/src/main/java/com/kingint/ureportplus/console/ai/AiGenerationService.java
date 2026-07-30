@@ -197,35 +197,43 @@ public class AiGenerationService {
 
 	@SuppressWarnings("unchecked")
 	private List<CellModification> parseResponse(String response) throws Exception {
-		String json = response.trim();
-		if (json.startsWith("```")) {
-			int start = json.indexOf("[");
-			int end = json.lastIndexOf("]");
-			if (start >= 0 && end > start) json = json.substring(start, end + 1);
-		}
-		if (!json.startsWith("[")) {
-			int start = json.indexOf("[");
-			int end = json.lastIndexOf("]");
-			if (start >= 0 && end > start) json = json.substring(start, end + 1);
-			else if (json.startsWith("{")) json = "[" + json + "]";
-			else throw new RuntimeException("Response is not valid JSON array");
-		}
+		String json = extractJsonArray(response);
+		if (json == null) throw new RuntimeException("Response is not valid JSON array");
 		return mapper.readValue(json, new TypeReference<List<CellModification>>() {});
+	}
+
+	private String extractJsonArray(String text) {
+		text = text.trim();
+		if (text.startsWith("```")) { int end = text.lastIndexOf("```"); if (end > 3) text = text.substring(3, end).trim(); }
+		int lastClose = text.lastIndexOf("]");
+		if (lastClose < 0) return null;
+		int depth = 0, open = -1;
+		for (int i = lastClose; i >= 0; i--) {
+			char c = text.charAt(i);
+			if (c == ']') depth++;
+			else if (c == '[') { depth--; if (depth == 0) { open = i; break; } }
+		}
+		return (open >= 0 && lastClose > open) ? text.substring(open, lastClose + 1) : null;
+	}
+
+	private String extractJson(String text) {
+		text = text.trim();
+		if (text.startsWith("```")) { int end = text.lastIndexOf("```"); if (end > 3) text = text.substring(3, end).trim(); }
+		int lastClose = text.lastIndexOf("}");
+		if (lastClose < 0) return null;
+		int depth = 0, open = -1;
+		for (int i = lastClose; i >= 0; i--) {
+			char c = text.charAt(i);
+			if (c == '}') depth++;
+			else if (c == '{') { depth--; if (depth == 0) { open = i; break; } }
+		}
+		return (open >= 0 && lastClose > open) ? text.substring(open, lastClose + 1) : null;
 	}
 
 	private ValidationResult parseValidationResult(String response) {
 		try {
-			String json = response.trim();
-			if (json.startsWith("```")) {
-				int start = json.indexOf("{");
-				int end = json.lastIndexOf("}");
-				if (start >= 0 && end > start) json = json.substring(start, end + 1);
-			}
-			if (!json.startsWith("{")) {
-				int start = json.indexOf("{");
-				int end = json.lastIndexOf("}");
-				if (start >= 0 && end > start) json = json.substring(start, end + 1);
-			}
+			String json = extractJson(response);
+			if (json == null) return null;
 			Map<String, Object> map = mapper.readValue(json, Map.class);
 			ValidationResult vr = new ValidationResult();
 			vr.approved = Boolean.TRUE.equals(map.get("approved"));
@@ -285,6 +293,10 @@ public class AiGenerationService {
 			}
 		}
 		return false;
+	}
+
+	public CellDefinition findCellByName(String cellName) {
+		return findCell(cellName);
 	}
 
 	private CellDefinition findCell(String cellName) {

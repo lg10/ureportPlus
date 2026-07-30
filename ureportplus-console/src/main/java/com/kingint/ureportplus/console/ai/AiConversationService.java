@@ -13,13 +13,17 @@ import org.slf4j.LoggerFactory;
 import com.kingint.ureportplus.definition.CellDefinition;
 import com.kingint.ureportplus.definition.ReportDefinition;
 import com.kingint.ureportplus.definition.value.AggregateType;
-import com.kingint.ureportplus.definition.value.DatasetValue;
-import com.kingint.ureportplus.definition.value.ExpressionValue;
-import com.kingint.ureportplus.definition.value.SimpleValue;
 import com.kingint.ureportplus.expression.ExpressionUtils;
 
 /**
- * Interactive multi-turn AI conversation with self-testing loop and full table manipulation.
+ * Interactive multi-turn AI conversation with multi-agent generation loop.
+ *
+ * Flow:
+ *   1. Frontend sends prompt + full history
+ *   2. Analyzer determines intent/confidence
+ *   3. If confidence < 90%: ask clarifying question
+ *   4. If confidence >= 90%: run multi-agent Generator→Validator loop
+ *   5. After MAX_TURNS: force apply (skip analyzer to save tokens)
  */
 public class AiConversationService {
 	private static final Logger log = LoggerFactory.getLogger(AiConversationService.class);
@@ -29,7 +33,12 @@ public class AiConversationService {
 	private final ReportDefinition reportDef;
 	private final Map<String, Object> context;
 	private final List<Map<String, String>> history = new ArrayList<Map<String, String>>();
+	private List<String> currentSelectedCells;
+	private final List<Map<String, String>> stages = new ArrayList<Map<String, String>>();
+	private java.io.PrintWriter streamOut;
 	private int turnCount = 0;
+
+	public void setStreamOutput(java.io.PrintWriter out) { this.streamOut = out; }
 	private static final int MAX_TURNS = 20;
 
 	public AiConversationService(ReportDefinition reportDef) {
@@ -39,20 +48,12 @@ public class AiConversationService {
 		this.context = ctxBuilder.buildContext();
 	}
 
-	/** Add a history entry from client-side records. */
-	public void addHistoryEntry(Map<String, String> entry) {
-		history.add(entry);
-		turnCount = Math.max(turnCount, history.size() / 2);
-	}
-
-	/** Sync client-side history to fill gaps since last backend turn. */
+	/** Replace backend history with client-side records (single source of truth). */
 	@SuppressWarnings("unchecked")
 	public void syncClientHistory(List<Map<String, Object>> clientHistory) {
+		history.clear();
 		if (clientHistory == null) return;
-		// Merge client history entries not yet recorded
-		int existing = history.size();
-		for (int i = existing; i < clientHistory.size(); i++) {
-			Map<String, Object> h = clientHistory.get(i);
+		for (Map<String, Object> h : clientHistory) {
 			String role = (String) h.get("role");
 			String content = (String) h.get("content");
 			if (role != null && content != null) {
@@ -68,67 +69,137 @@ public class AiConversationService {
 				history.add(entry);
 			}
 		}
-		turnCount = history.size() / 2;
+	}
+
+	private void addStage(String icon, String label) { addStage(icon, label, null); }
+	private void addStage(String icon, String label, String detail) {
+		Map<String, String> s = new HashMap<String, String>();
+		s.put("icon", icon); s.put("label", label);
+		s.put("detail", detail != null ? detail : "");
+		stages.add(s);
+		// Stream event if output is connected
+		if (streamOut != null) {
+			try {
+				Map<String, Object> evt = new HashMap<String, Object>();
+				evt.put("type", "stage");
+				evt.put("icon", icon);
+				evt.put("label", label);
+				if (detail != null) evt.put("detail", detail);
+				streamOut.write(mapper.writeValueAsString(evt) + "\n");
+				streamOut.flush();
+			} catch (Exception ignored) {}
+		}
 	}
 
 	@SuppressWarnings("unchecked")
-	public TurnResult processTurn(String userInput) throws Exception {
-		turnCount++;
+	public TurnResult processTurn(String userInput, List<String> selectedCells) throws Exception {
+		this.currentSelectedCells = selectedCells;
+		stages.clear();
+		turnCount = (history.size() / 2) + 1;
 		log.info("[AI Turn {}] Processing: {}", turnCount, userInput);
 
 		Map<String, String> entry = new HashMap<String, String>();
 		entry.put("role", "user");
 		entry.put("content", userInput);
-		history.add(entry);
+		if (history.isEmpty() || !userInput.equals(getLastUserContent())) {
+			history.add(entry);
+		}
 
+		// After MAX_TURNS, force apply (skip analyzer)
+		if (turnCount >= MAX_TURNS) {
+			log.info("[AI Turn {}] MAX_TURNS reached, forcing apply", turnCount);
+			Map<String, String> aiEntry = new HashMap<String, String>();
+			aiEntry.put("role", "ai");
+			aiEntry.put("content", "达到最大对话轮次，自动生成方案。");
+			history.add(aiEntry);
+			return forceApply();
+		}
+
+		addStage("🧠", "AI 分析需求中…");
 		String response = callAnalyzer();
 		Map<String, Object> result = parseAnalyzerResponse(response);
 		if (result == null) {
 			return TurnResult.question("我没有理解你的需求，能换个方式描述吗？", null);
 		}
-
-		int confidence = result.get("confidence") instanceof Number
-			? ((Number) result.get("confidence")).intValue() : 0;
-		String action = (String) result.get("action");
+		addStage("✅", "分析完成",
+			(String) (result.get("understanding") != null ? result.get("understanding") : "已理解需求"));
 
 		Map<String, String> aiEntry = new HashMap<String, String>();
 		aiEntry.put("role", "ai");
 		aiEntry.put("content", response);
 		history.add(aiEntry);
 
+		int confidence = result.get("confidence") instanceof Number
+			? ((Number) result.get("confidence")).intValue() : 0;
+		String action = (String) result.get("action");
+
 		if ("ask".equals(action) || confidence < 90) {
 			String question = (String) result.get("question");
 			List<Map<String, String>> options = (List<Map<String, String>>) result.get("options");
 			if (question == null) question = "能提供更多细节吗？";
-			return TurnResult.question(question, options);
+			TurnResult tr = TurnResult.question(question, options);
+			tr.understanding = (String) result.get("understanding");
+			tr.stages = new ArrayList<Map<String, String>>(stages);
+			return tr;
 		}
 
-		List<AiGenerationService.CellModification> modifications = generateModifications();
-		List<Map<String, Object>> structuralOps = generateStructuralOps();
+		TurnResult tr = forceApply();
+		tr.understanding = (String) result.get("understanding");
+		tr.stages = new ArrayList<Map<String, String>>(stages);
+		return tr;
+	}
+
+	private TurnResult forceApply() throws Exception {
+		addStage("🔍", "生成方案 (多智能体循环)");
+		String userPrompt = buildUserPromptFromHistory();
+		AiGenerationService genService = new AiGenerationService(reportDef);
+		AiGenerationService.AiResult genResult = genService.generate(userPrompt, null);
+
+		addStage("✅", "方案生成完成",
+			"生成 " + genResult.modifications.size() + " 项修改, " +
+			(genResult.structuralOps != null ? genResult.structuralOps.size() : 0) + " 项结构操作");
+		if (!genResult.warnings.isEmpty()) {
+			addStage("⚠️", "验证中有提示", String.join("; ", genResult.warnings));
+		}
+		addStage("🔧", "自测中…");
+
+		List<AiGenerationService.CellModification> modifications = genResult.modifications;
+		List<Map<String, Object>> structuralOps = genResult.structuralOps != null
+			? genResult.structuralOps : new ArrayList<Map<String, Object>>();
 
 		if (modifications.isEmpty() && structuralOps.isEmpty()) {
 			return TurnResult.question("无法生成有效的修改方案，请尝试更具体的描述。", null);
 		}
 
 		List<Map<String, Object>> testResults = selfTest(modifications);
+		if (genResult.warnings != null && !genResult.warnings.isEmpty()) {
+			for (String w : genResult.warnings) {
+				Map<String, Object> wr = new HashMap<String, Object>();
+				wr.put("cellName", "system");
+				List<String> checks = new ArrayList<String>();
+				checks.add(w);
+				wr.put("checks", checks);
+				wr.put("passed", true);
+				testResults.add(wr);
+			}
+		}
 
 		TurnResult tr = new TurnResult();
 		tr.action = "apply";
 		tr.modifications = modifications;
 		tr.structuralOps = structuralOps;
 		tr.testResults = testResults;
-		tr.confidence = confidence;
-		tr.explanation = (String) result.get("explanation");
+		tr.explanation = "已根据对话理解生成修改方案。";
+		tr.stages = new ArrayList<Map<String, String>>(stages);
+		tr.allTestsPassed = true;
 
-		boolean allPassed = true;
 		for (Map<String, Object> tr2 : testResults) {
-			if (Boolean.FALSE.equals(tr2.get("passed"))) { allPassed = false; break; }
+			if (Boolean.FALSE.equals(tr2.get("passed"))) { tr.allTestsPassed = false; break; }
 		}
-		if (!structuralOps.isEmpty()) allPassed = true; // structural ops self-validate
-		tr.allTestsPassed = allPassed;
-
 		return tr;
 	}
+
+	// ═══════════════════ Analyzer ═══════════════════
 
 	private String callAnalyzer() throws Exception {
 		String systemPrompt = buildAnalyzerPrompt();
@@ -137,13 +208,15 @@ public class AiConversationService {
 		for (Map<String, String> entry : history) {
 			userPrompt.append("[").append(entry.get("role")).append("]: ")
 				.append(entry.get("content")).append("\n");
-			// Include option context if user was selecting from a question
 			if ("user".equals(entry.get("role")) && entry.containsKey("questionContext")) {
 				userPrompt.append("  [用户回答的是以下问题: ").append(entry.get("questionContext")).append("]\n");
 			}
 		}
 		userPrompt.append("\n## 当前状态\n");
 		userPrompt.append("轮次: ").append(turnCount).append("/").append(MAX_TURNS).append("\n");
+		if (currentSelectedCells != null && !currentSelectedCells.isEmpty()) {
+			userPrompt.append("用户当前选中的单元格: ").append(String.join(", ", currentSelectedCells)).append("\n");
+		}
 		userPrompt.append("请分析用户意图，决定下一步动作。");
 
 		return client.chat(systemPrompt, userPrompt.toString());
@@ -152,19 +225,15 @@ public class AiConversationService {
 	@SuppressWarnings("unchecked")
 	private String buildAnalyzerPrompt() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("你是 UReportPlus 报表设计顾问。你需要通过多轮对话理解用户需求，直到有90%以上把握再给出方案。\n\n");
+		sb.append("你是 UReportPlus 报表设计顾问。通过多轮对话理解需求，90%把握以上给出方案。\n\n");
 
 		sb.append("## 你能操控报表的所有能力\n");
-		sb.append("- **修改单元格**: 设置文本、表达式、数据集绑定、展开方向、父格\n");
-		sb.append("- **插入行/列**: 在指定位置添加空行或空列\n");
-		sb.append("- **删除行/列**: 删除指定行或列\n");
-		sb.append("- **合并单元格**: 合并指定范围的单元格\n");
-		sb.append("- **设置行类型(波段)**: 标题行、表头行、表尾行、合计行、小计行\n");
-		sb.append("- **调整行高/列宽**: 修改指定行的高度或指定列的宽度\n");
-		sb.append("- **设置样式**: 字体、字号、粗体、斜体、对齐、背景色、前景色、边框\n\n");
+		sb.append("- 修改单元格: 设置文本、表达式、数据集绑定、展开方向、父格\n");
+		sb.append("- 插入/删除行/列\n");
+		sb.append("- 合并单元格、设置行类型(波段)、调整行高/列宽\n\n");
 
-			sb.append(ExamplePatterns.getPatternReference());
-			sb.append("\n");
+		sb.append(ExamplePatterns.getPatternReference());
+		sb.append("\n");
 
 		sb.append("## 报表上下文\n");
 		ReportContextBuilder ctxBuilder = new ReportContextBuilder(reportDef);
@@ -175,7 +244,7 @@ public class AiConversationService {
 		for (Map<String, Object> ds : datasets) {
 			sb.append("- ").append(ds.get("name")).append(": ").append(ds.get("fields")).append("\n");
 		}
-		sb.append("\n总行数: ").append(ctx.get("totalRows"));
+		sb.append("总行数: ").append(ctx.get("totalRows"));
 		sb.append(", 总列数: ").append(ctx.get("totalColumns")).append("\n");
 
 		List<Map<String, Object>> cells = (List<Map<String, Object>>) ctx.get("cells");
@@ -198,51 +267,10 @@ public class AiConversationService {
 			sb.append("\n");
 		}
 
-		// Row/col details
-		if (ctx.containsKey("rows")) {
-			@SuppressWarnings("rawtypes")
-			List rows = (List) ctx.get("rows");
-			sb.append("\n行详情:\n");
-			for (int i = 0; i < Math.min(rows.size(), 30); i++) {
-				Map<String, Object> r = (Map<String, Object>) rows.get(i);
-				sb.append("  行").append(r.get("number")).append(" 高度=").append(r.get("height"));
-				if (r.get("band") != null) sb.append(" band=").append(r.get("band"));
-				sb.append("\n");
-			}
-		}
-		if (ctx.containsKey("columns")) {
-			@SuppressWarnings("rawtypes")
-			List cols = (List) ctx.get("columns");
-			sb.append("\n列详情:\n");
-			for (int i = 0; i < Math.min(cols.size(), 20); i++) {
-				Map<String, Object> c = (Map<String, Object>) cols.get(i);
-				sb.append("  列").append(c.get("number")).append(" 宽度=").append(c.get("width")).append("\n");
-			}
-		}
-		if (ctx.containsKey("merges") && !((List<?>)ctx.get("merges")).isEmpty()) {
-			sb.append("\n已合并的单元格: ").append(ctx.get("merges")).append("\n");
-		}
-
-		sb.append("\n## 动作规则\n");
-		sb.append("你必须输出严格的 JSON:\n");
-		sb.append("{\n");
-		sb.append("  \"action\": \"ask\" | \"apply\",\n");
-		sb.append("  \"confidence\": 0-100,\n");
-		sb.append("  \"understanding\": \"你对用户需求的理解摘要(1-2句)\",\n");
-		sb.append("  \"question\": \"如果 action=ask, 你要问的问题\",\n");
-		sb.append("  \"options\": [{\"label\":\"选项A\",\"value\":\"A\"},...],\n");
-		sb.append("  \"explanation\": \"如果 action=apply, 方案说明\"\n");
-		sb.append("}\n\n");
-		sb.append("关键规则:\n");
-		sb.append("1. confidence<90 时必须 action=ask\n");
-		sb.append("2. question 要简洁明确，1-2句话\n");
-		sb.append("3. options 提供 2-4 个具体选择，每个label要完整描述选项含义\n");
-		sb.append("   - value字段使用简短标识符(如A/B/C)，但label包含完整上下文让用户理解\n");
-		sb.append("4. 每轮最多问1个问题\n");
-		sb.append("5. 如果对话历史中有过类似问题，不要重复询问\n");
-		sb.append("6. 第 ").append(MAX_TURNS).append(" 轮后必须 action=apply\n");
-		sb.append("7. 只在JSON外不要有任何文字\n");
-		sb.append("8. 注意表格结构能力: 可以建议插入行/列、合并单元格等操作\n");
+		sb.append("\n## 动作规则 (严格JSON输出)\n");
+		sb.append("{\"action\":\"ask\"|\"apply\",\"confidence\":0-100,\"understanding\":\"...\",\n");
+		sb.append(" \"question\":\"...\",\"options\":[{\"label\":\"...\",\"value\":\"A\"}],\"explanation\":\"...\"}\n");
+		sb.append("confidence<90→ask; 每轮最多1问; options的label要充分描述让用户理解选择含义\n");
 
 		return sb.toString();
 	}
@@ -250,16 +278,8 @@ public class AiConversationService {
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> parseAnalyzerResponse(String response) {
 		try {
-			String json = response.trim();
-			if (json.startsWith("```")) {
-				int s = json.indexOf("{"); int e = json.lastIndexOf("}");
-				if (s >= 0 && e > s) json = json.substring(s, e + 1);
-			}
-			if (!json.startsWith("{")) {
-				int s = json.indexOf("{"); int e = json.lastIndexOf("}");
-				if (s >= 0 && e > s) json = json.substring(s, e + 1);
-				else return null;
-			}
+			String json = extractJson(response);
+			if (json == null) return null;
 			return mapper.readValue(json, Map.class);
 		} catch (Exception e) {
 			log.debug("Parse analyzer response failed: {}", e.getMessage());
@@ -267,115 +287,46 @@ public class AiConversationService {
 		}
 	}
 
-	private List<AiGenerationService.CellModification> generateModifications() throws Exception {
-		ReportContextBuilder ctxBuilder = new ReportContextBuilder(reportDef);
-		String systemPrompt = ctxBuilder.buildSystemPrompt(context);
+	/** Extract the last valid JSON object from a response that may contain reasoning text. */
+	private String extractJson(String text) {
+		text = text.trim();
+		// Remove markdown code fences
+		if (text.startsWith("```")) {
+			int end = text.lastIndexOf("```");
+			if (end > 3) text = text.substring(3, end).trim();
+		}
+		// Find the outermost JSON object: find the LAST { that has a matching }
+		// This handles reasoning models that output text before the JSON
+		int lastClose = text.lastIndexOf("}");
+		if (lastClose < 0) return null;
+		int depth = 0;
+		int open = -1;
+		for (int i = lastClose; i >= 0; i--) {
+			char c = text.charAt(i);
+			if (c == '}') depth++;
+			else if (c == '{') {
+				depth--;
+				if (depth == 0) { open = i; break; }
+			}
+		}
+		if (open >= 0 && lastClose > open) {
+			return text.substring(open, lastClose + 1);
+		}
+		return null;
+	}
 
-		StringBuilder userPrompt = new StringBuilder();
-		userPrompt.append("根据以下对话理解的需求，生成具体的单元格修改JSON。\n\n");
-		userPrompt.append("## 对话理解\n");
+	// ═══════════════════ Helpers ═══════════════════
+
+	private String buildUserPromptFromHistory() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("根据以下对话理解的需求，生成具体的单元格修改。\n\n");
+		sb.append("## 对话理解\n");
 		for (Map<String, String> entry : history) {
-			userPrompt.append("[").append(entry.get("role")).append("]: ")
+			sb.append("[").append(entry.get("role")).append("]: ")
 				.append(entry.get("content")).append("\n");
 		}
-		userPrompt.append("\n请输出修改方案的JSON数组。");
-
-		String response = client.chat(systemPrompt, userPrompt.toString());
-		return parseModifications(response);
-	}
-
-	@SuppressWarnings("unchecked")
-	private List<AiGenerationService.CellModification> parseModifications(String response) {
-		try {
-			String json = response.trim();
-			if (json.startsWith("```")) {
-				int s = json.indexOf("["); int e = json.lastIndexOf("]");
-				if (s >= 0 && e > s) json = json.substring(s, e + 1);
-			}
-			if (!json.startsWith("[")) {
-				int s = json.indexOf("["); int e = json.lastIndexOf("]");
-				if (s >= 0 && e > s) json = json.substring(s, e + 1);
-				else return new ArrayList<AiGenerationService.CellModification>();
-			}
-			return mapper.readValue(json, new TypeReference<List<AiGenerationService.CellModification>>() {});
-		} catch (Exception e) {
-			return new ArrayList<AiGenerationService.CellModification>();
-		}
-	}
-
-	/** Generate structural operations based on conversation understanding. */
-	@SuppressWarnings("unchecked")
-	private List<Map<String, Object>> generateStructuralOps() throws Exception {
-		ReportContextBuilder ctxBuilder = new ReportContextBuilder(reportDef);
-		Map<String, Object> fullCtx = ctxBuilder.buildContext();
-
-		StringBuilder sysPrompt = new StringBuilder();
-		sysPrompt.append("你是 UReportPlus 报表结构操作专家。你需要生成表格结构修改指令。\n\n");
-		sysPrompt.append("## 当前表格结构\n");
-		sysPrompt.append("总行数: ").append(fullCtx.get("totalRows")).append("\n");
-		sysPrompt.append("总列数: ").append(fullCtx.get("totalColumns")).append("\n");
-		if (fullCtx.containsKey("rows")) {
-			List<Map<String, Object>> rows = (List<Map<String, Object>>) fullCtx.get("rows");
-			for (Map<String, Object> r : rows) {
-				sysPrompt.append("行").append(r.get("number")).append(": 高度=").append(r.get("height"));
-				if (r.get("band") != null) sysPrompt.append(" band=").append(r.get("band"));
-				sysPrompt.append("\n");
-			}
-		}
-		if (fullCtx.containsKey("columns")) {
-			List<Map<String, Object>> cols = (List<Map<String, Object>>) fullCtx.get("columns");
-			for (Map<String, Object> c : cols) {
-				sysPrompt.append("列").append(c.get("number")).append(": 宽度=").append(c.get("width")).append("\n");
-			}
-		}
-
-		sysPrompt.append("\n## 可用操作类型\n");
-		sysPrompt.append("- insertRow:   在指定行号位置插入行。参数: {rowNumber(在第几行后插入), height(行高,默认25)}\n");
-		sysPrompt.append("- insertCol:   在指定列号位置插入列。参数: {colNumber(在第几列后插入), width(列宽,默认100)}\n");
-		sysPrompt.append("- deleteRow:   删除指定行。参数: {rowNumber}\n");
-		sysPrompt.append("- deleteCol:   删除指定列。参数: {colNumber}\n");
-		sysPrompt.append("- mergeCells:  合并单元格。参数: {startRow,startCol,endRow,endCol}\n");
-		sysPrompt.append("- setBand:     设置行类型。参数: {rowNumber, band(可选: headerrepeat/title/footerrepeat/summary/subtotal)}\n");
-		sysPrompt.append("- setRowHeight: 设置行高。参数: {rowNumber, height}\n");
-		sysPrompt.append("- setColWidth: 设置列宽。参数: {colNumber, width}\n\n");
-
-		sysPrompt.append("## 输出格式\n");
-		sysPrompt.append("返回严格的JSON数组:\n");
-		sysPrompt.append("[\n");
-		sysPrompt.append("  {\"type\": \"insertRow\", \"rowNumber\": 3, \"height\": 25, \"description\": \"在第3行后插入合计行\"},\n");
-		sysPrompt.append("  {\"type\": \"insertCol\", \"colNumber\": 2, \"width\": 120, \"description\": \"在第2列后插入新列\"}\n");
-		sysPrompt.append("]\n");
-		sysPrompt.append("如果不需要结构操作，返回 []\n");
-
-		StringBuilder userPrompt = new StringBuilder();
-		userPrompt.append("## 对话理解\n");
-		for (Map<String, String> entry : history) {
-			userPrompt.append("[").append(entry.get("role")).append("]: ")
-				.append(entry.get("content")).append("\n");
-		}
-		userPrompt.append("\n请根据对话内容，生成表格结构修改JSON数组。如果没有需要的结构修改，返回空数组[]。");
-
-		String response = client.chat(sysPrompt.toString(), userPrompt.toString());
-		return parseStructuralOps(response);
-	}
-
-	@SuppressWarnings("unchecked")
-	private List<Map<String, Object>> parseStructuralOps(String response) {
-		try {
-			String json = response.trim();
-			if (json.startsWith("```")) {
-				int s = json.indexOf("["); int e = json.lastIndexOf("]");
-				if (s >= 0 && e > s) json = json.substring(s, e + 1);
-			}
-			if (!json.startsWith("[")) {
-				int s = json.indexOf("["); int e = json.lastIndexOf("]");
-				if (s >= 0 && e > s) json = json.substring(s, e + 1);
-				else return new ArrayList<Map<String, Object>>();
-			}
-			return mapper.readValue(json, new TypeReference<List<Map<String, Object>>>() {});
-		} catch (Exception e) {
-			return new ArrayList<Map<String, Object>>();
-		}
+		sb.append("\n请输出修改方案的JSON数组。");
+		return sb.toString();
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -398,7 +349,7 @@ public class AiConversationService {
 			}
 			if ("dataset".equals(mod.type) && mod.property != null && mod.datasetId != null) {
 				boolean fieldOk = fieldExists(mod.datasetId, mod.property);
-				checks.add("字段 " + mod.property + (fieldOk ? " ✓" : " ✗ (不存在)"));
+				checks.add("字段 " + mod.property + (fieldOk ? " ✓" : " ✗"));
 				if (!fieldOk) passed = false;
 			}
 			if (mod.aggregate != null) {
@@ -411,12 +362,9 @@ public class AiConversationService {
 				}
 			}
 			CellDefinition cell = findCell(mod.cellName);
-			if (cell != null) {
-				checks.add("单元格存在 ✓");
-			} else {
-				checks.add("单元格不存在 ✗");
-				passed = false;
-			}
+			checks.add("单元格 " + (cell != null ? "存在 ✓" : "不存在 ✗"));
+			if (cell == null) passed = false;
+
 			r.put("checks", checks);
 			r.put("passed", passed);
 			results.add(r);
@@ -437,6 +385,15 @@ public class AiConversationService {
 		return false;
 	}
 
+	private String getLastUserContent() {
+		for (int i = history.size() - 1; i >= 0; i--) {
+			if ("user".equals(history.get(i).get("role"))) {
+				return history.get(i).get("content");
+			}
+		}
+		return null;
+	}
+
 	private CellDefinition findCell(String cellName) {
 		if (reportDef.getCells() != null) {
 			for (CellDefinition cell : reportDef.getCells()) {
@@ -446,13 +403,13 @@ public class AiConversationService {
 		return null;
 	}
 
-	// ═══════════════════════════════════════════
-	// Data classes
-	// ═══════════════════════════════════════════
+	// ═══════════════════ Data Classes ═══════════════════
 
 	public static class TurnResult {
 		public String action;
 		public String question;
+		public String understanding;
+		public List<Map<String, String>> stages;
 		public List<Map<String, String>> options;
 		public int confidence;
 		public String explanation;

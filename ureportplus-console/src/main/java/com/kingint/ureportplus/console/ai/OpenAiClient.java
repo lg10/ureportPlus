@@ -80,15 +80,17 @@ public class OpenAiClient {
 
 			int responseCode = conn.getResponseCode();
 			if (responseCode != 200) {
-				BufferedReader errorReader = new BufferedReader(
-						new InputStreamReader(conn.getErrorStream(), "UTF-8"));
-				StringBuilder errorBody = new StringBuilder();
-				String line;
-				while ((line = errorReader.readLine()) != null) {
-					errorBody.append(line);
+				String errorMsg = "HTTP " + responseCode;
+				java.io.InputStream es = conn.getErrorStream();
+				if (es != null) {
+					BufferedReader errorReader = new BufferedReader(new InputStreamReader(es, "UTF-8"));
+					StringBuilder errorBody = new StringBuilder();
+					String line;
+					while ((line = errorReader.readLine()) != null) errorBody.append(line);
+					errorReader.close();
+					errorMsg = errorBody.toString();
 				}
-				errorReader.close();
-				throw new RuntimeException("AI API error " + responseCode + ": " + errorBody.toString());
+				throw new RuntimeException("AI API error " + responseCode + ": " + errorMsg);
 			}
 
 			BufferedReader reader = new BufferedReader(
@@ -109,8 +111,15 @@ public class OpenAiClient {
 			Map<String, Object> choice = choices.get(0);
 			Map<String, String> message = (Map<String, String>) choice.get("message");
 			String content = message.get("content");
+			// DeepSeek v4 reasoning mode puts text in reasoning_content
+			if (content == null || content.isEmpty()) {
+				content = message.get("reasoning_content");
+			}
+			if (content == null || content.isEmpty()) {
+				throw new RuntimeException("AI API returned empty content");
+			}
 
-			log.debug("[OpenAiClient] Response: {}", content);
+			log.debug("[OpenAiClient] Response: {}", content.substring(0, Math.min(200, content.length())));
 			return content;
 
 		} finally {

@@ -46,8 +46,12 @@ public class DatasetValueParser extends ValueParser {
 		value.setDatasetName(element.attributeValue("dataset-name"));
 		value.setProperty(element.attributeValue("property"));
 		String order=element.attributeValue("order");
-		if(StringUtils.isNotBlank(order)){
-			value.setOrder(Order.valueOf(order));
+		if(StringUtils.isNotBlank(order) && !"undefined".equals(order)){
+			try {
+				value.setOrder(Order.valueOf(order));
+			} catch (IllegalArgumentException e) {
+				value.setOrder(Order.none);
+			}
 		}
 		String mappingType=element.attributeValue("mapping-type");
 		if(StringUtils.isNotBlank(mappingType)){

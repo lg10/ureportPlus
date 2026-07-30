@@ -34,6 +34,7 @@ import org.apache.velocity.VelocityContext;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 
+import com.kingint.ureportplus.UReportPlusVersion;
 import com.kingint.ureportplus.console.auth.ConsoleAuthService;
 import com.kingint.ureportplus.provider.report.ReportFile;
 import com.kingint.ureportplus.provider.report.ReportProvider;
@@ -124,6 +125,7 @@ public class ConsoleServletAction extends RenderPageServletAction {
         context.put("totalReports", reports.size());
         context.put("totalExamples", examples.size());
         context.put("providerCount", providerCount);
+        context.put("version", UReportPlusVersion.getVersion());
         context.put("examples", examples);
 
         resp.setContentType("text/html");
