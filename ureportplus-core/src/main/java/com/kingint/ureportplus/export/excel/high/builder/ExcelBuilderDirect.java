@@ -131,6 +131,9 @@ public class ExcelBuilderDirect extends ExcelBuilder {
 	        			for(int c=colStart;c<colEnd;c++){
 	        				Cell cc=rr.getCell(c-skipCol);
 	        				if(cc==null){
+	        					// Don't create cells in merged regions on subsequent rows;
+	        					// creating empty cells here can blank out the merge value
+	        					if (rowSpan > 0 && j > rowStart) continue;
 	        					cc=rr.createCell(c-skipCol);
 	        				}
 	        				cc.setCellStyle(style);

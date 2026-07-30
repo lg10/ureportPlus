@@ -200,6 +200,10 @@ public class PdfProducer implements Producer {
 			document.close();
 		}catch(Exception ex){
 			throw new ReportComputeException(ex);
+		} finally {
+			if (document.isOpen()) {
+				try { document.close(); } catch (Exception ignored) {}
+			}
 		}
 	}
 

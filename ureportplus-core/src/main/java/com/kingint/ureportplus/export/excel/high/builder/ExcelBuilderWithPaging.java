@@ -132,6 +132,7 @@ public class ExcelBuilderWithPaging extends ExcelBuilder{
 		        			for(int c=colStart;c<colEnd;c++){
 		        				Cell cc=rr.getCell(c-skipCol);
 		        				if(cc==null){
+		        					if (rowSpan > 0 && j > rowStart) continue;
 		        					cc=rr.createCell(c-skipCol);
 		        				}
 		        				cc.setCellStyle(style);

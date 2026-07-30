@@ -139,6 +139,7 @@ public class Excel97Producer {
 			        			for(int c=colStart;c<colEnd;c++){
 			        				Cell cc=rr.getCell(c);
 			        				if(cc==null){
+			        					if (rowSpan > 0 && j > rowStart) continue;
 			        					cc=rr.createCell(c);
 			        				}
 			        				cc.setCellStyle(style);
@@ -291,6 +292,7 @@ public class Excel97Producer {
 		        			for(int c=colStart;c<colEnd;c++){
 		        				Cell cc=rr.getCell(c);
 		        				if(cc==null){
+		        					if (rowSpan > 0 && j > rowStart) continue;
 		        					cc=rr.createCell(c);
 		        				}
 		        				cc.setCellStyle(style);

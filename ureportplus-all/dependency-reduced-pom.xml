@@ -4,7 +4,7 @@
   <groupId>com.kingint.ureportplus</groupId>
   <artifactId>ureportplus-all</artifactId>
   <name>UReportPlus All-in-One</name>
-  <version>1.0.3</version>
+  <version>1.0.4</version>
   <description>UReportPlus - High-performance pure Java Chinese-style report engine (All-in-One)</description>
   <url>https://gitee.com/lg10/ureport-plus</url>
   <developers>
