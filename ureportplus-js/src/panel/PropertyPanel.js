@@ -1,5 +1,6 @@
 /**
- * Created by Jacky.Gao on 2017-02-04.
+ * Property Panel v3 — stable scroll container, grid style tab, type pills.
+ * Fixes: no page jumps, clean grid layout for styles, compact Notion aesthetic.
  */
 import SimpleValueEditor from './property/SimpleValueEditor.js';
 import ExpressionValueEditor from './property/ExpressionValueEditor.js';
@@ -22,571 +23,342 @@ import CrossTabWidget from '../widget/CrossTabWidget.js';
 import {setDirty} from '../Utils.js';
 import {alert} from '../MsgBox.js'
 
-export default class PropertyPanel{
-    constructor(context){
-        this.context=context;
-    }
-    buildPanel(){
-        if (!$('#ud-prop-css').length) {
-            $('<style id="ud-prop-css">').text(`
-                .ud-prop-panel * { box-sizing: border-box; }
-                .ud-prop-panel { padding: 4px 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; font-size:12px; color:#374151; }
-                .ud-prop-panel fieldset { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:10px 12px; margin:0 0 8px 0; max-width:100%; overflow:hidden; }
-                .ud-prop-panel legend { width:auto; font-size:12px; font-weight:600; color:#374151; padding:0 6px; margin:0; border:none; }
-                .ud-prop-panel label { font-size:12px; font-weight:500; color:#6b7280; margin-bottom:2px; display:block; white-space:nowrap; }
-                .ud-prop-panel .form-group { margin-bottom:6px; }
-                .ud-prop-panel .form-control { height:28px; padding:3px 8px; font-size:12px; border:1px solid #d1d5db; border-radius:6px; color:#111827; background:#fff; max-width:100%; }
-                .ud-prop-panel .form-control:focus { border-color:#4f46e5; box-shadow:0 0 0 2px rgba(79,70,229,.12); outline:none; }
-                .ud-prop-panel select.form-control { padding:2px 6px; cursor:pointer; }
-                .ud-prop-panel .btn { font-size:12px; font-weight:500; padding:4px 12px; border-radius:6px; }
-                .ud-prop-panel .btn-primary { background:#4f46e5; border-color:#4f46e5; color:#fff; }
-                .ud-prop-panel .btn-primary:hover { background:#4338ca; }
-                .ud-prop-panel .btn-default { background:#fff; border:1px solid #d1d5db; color:#374151; }
-                .ud-prop-panel .btn-default:hover { background:#f9fafb; }
-                .ud-prop-panel .btn-sm { font-size:11px; padding:3px 8px; }
-                .ud-prop-panel table { width:100%; border-collapse:collapse; }
-                .ud-prop-panel table td { padding:3px 4px; font-size:12px; }
-                .ud-prop-panel table input[type=text], .ud-prop-panel table input[type=number] { width:100%; height:26px; padding:2px 6px; font-size:12px; border:1px solid #d1d5db; border-radius:5px; box-sizing:border-box; }
-                .ud-prop-panel table input[type=radio], .ud-prop-panel table input[type=checkbox] { margin:0 4px 0 0; accent-color:#4f46e5; }
-                .ud-prop-panel .checkbox-inline { padding-left:2px; margin-right:8px; font-size:12px; }
-                .ud-prop-panel .input-group { display:flex; max-width:100%; }
-                .ud-prop-panel .input-group .form-control { flex:1; }
-                .ud-prop-panel .input-group-btn { flex-shrink:0; }
-                .ud-prop-panel hr { border:none; border-top:1px solid #e5e7eb; margin:6px 0; }
-                .ud-prop-panel input.form-control { width:100% !important; max-width:100% !important; box-sizing:border-box !important; }
-                .ud-prop-panel select.form-control { width:100% !important; max-width:100% !important; }
-                .ud-prop-panel textarea.form-control { width:100% !important; max-width:100% !important; box-sizing:border-box !important; }
-            `).appendTo('head');
+const TYPE_ITEMS = [
+    {v:'simple',label:'文本',icon:'Aa'},
+    {v:'expression',label:'表达式',icon:'ƒ'},
+    {v:'dataset',label:'数据集',icon:'⊞'},
+    {v:'image',label:'图片',icon:'🖼'},
+    {v:'slash',label:'斜线',icon:'/'},
+    {v:'qrcode',label:'二维码',icon:'▣'},
+    {v:'barcode',label:'条码',icon:'∥'},
+    {v:'chart',label:'图表',icon:'📊'},
+];
+
+const STYLE_FIELDS = [
+    ['字体','fontFamily','text'],
+    ['字号','fontSize','number'],
+    ['粗体','bold','cb'],
+    ['斜体','italic','cb'],
+    ['前景色','forecolor','text'],
+    ['背景色','bgcolor','text'],
+    ['对齐','align','sel','left|center|right'],
+    ['左边框','borderLeft','sel','none|solid|dashed|dotted'],
+    ['上边框','borderTop','sel','none|solid|dashed|dotted'],
+    ['右边框','borderRight','sel','none|solid|dashed|dotted'],
+    ['下边框','borderBottom','sel','none|solid|dashed|dotted'],
+];
+
+export default class PropertyPanel {
+    constructor(context) { this.context = context; }
+
+    buildPanel() {
+        if (!$('#ud-prop-v3-css').length) {
+            $('<style id="ud-prop-v3-css">').text(`
+.ud-prop{font:12px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#1d1d1f;overflow-x:hidden;padding:0 8px 8px}
+.ud-prop *{box-sizing:border-box}
+.ud-prop input,.ud-prop select,.ud-prop textarea{font:12px inherit}
+.ud-prop input[type=text],.ud-prop input[type=number],.ud-prop textarea,.ud-prop select{width:100%;padding:4px 8px;border:1px solid #e5e7eb;border-radius:5px;color:#1d1d1f;background:#fff;outline:none;transition:border-color .15s;height:28px}
+.ud-prop input:focus,.ud-prop select:focus,.ud-prop textarea:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.1)}
+.ud-prop select{cursor:pointer}
+.ud-prop input[type=radio],.ud-prop input[type=checkbox]{accent-color:#6366f1;margin:0 4px 0 0;vertical-align:middle}
+.ud-prop .btn{font:11px/1 inherit;font-weight:500;padding:3px 10px;border-radius:5px;border:none;cursor:pointer}
+.ud-prop .btn-primary{background:#6366f1;color:#fff}.ud-prop .btn-primary:hover{background:#4f46e5}
+.ud-prop .btn-default{background:#f3f4f6;color:#374151}.ud-prop .btn-default:hover{background:#e5e7eb}
+
+.ud-prop-tabs{display:flex;gap:0;border-bottom:1px solid #f0f0f0;margin-bottom:6px;position:sticky;top:0;background:#fff;z-index:10}
+.ud-prop-tab{padding:5px 12px;font-size:11px;font-weight:600;color:#9ca3af;cursor:pointer;border:none;background:0;position:relative;transition:color .15s}
+.ud-prop-tab:hover{color:#6366f1}
+.ud-prop-tab.on{color:#6366f1}
+.ud-prop-tab.on::after{content:'';position:absolute;bottom:-1px;left:6px;right:6px;height:2px;background:#6366f1;border-radius:1px}
+
+.ud-prop-types{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:8px;position:sticky;top:32px;background:#fff;z-index:9;padding:4px 0}
+.ud-prop-type{padding:3px 8px;font-size:11px;font-weight:500;border-radius:5px;cursor:pointer;color:#6b7280;background:0;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+.ud-prop-type:hover{background:#f3f4f6;color:#1d1d1f}
+.ud-prop-type.on{background:#eef2ff;color:#6366f1;border-color:#c7d2fe}
+
+.ud-prop-sec{margin-bottom:10px}
+.ud-prop-sec-hd{font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;padding:3px 0;cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px}
+.ud-prop-sec-hd:hover{color:#6b7280}
+.ud-prop-sec-hd .arr{font-size:8px;transition:transform .2s}
+.ud-prop-sec-hd.folded .arr{transform:rotate(-90deg)}
+.ud-prop-sec-bd{padding-top:4px}
+
+.ud-prop-row{margin-bottom:5px}
+.ud-prop-row>label{display:block;font-size:11px;font-weight:500;color:#6b7280;margin-bottom:2px}
+.ud-prop-inline{display:flex;align-items:center;gap:4px}
+.ud-prop-inline>*{min-width:0}
+.ud-prop-inline label{font-size:11px;white-space:nowrap;color:#6b7280}
+.ud-prop-hint{font-size:10px;color:#9ca3af;font-weight:400;margin-left:3px}
+
+.ud-prop-grid{display:grid;grid-template-columns:48px 1fr;gap:3px 6px;align-items:center}
+.ud-prop-grid>label{font-size:11px;color:#6b7280;text-align:right}
+.ud-prop-grid input[type=text],.ud-prop-grid input[type=number],.ud-prop-grid select{width:100%;min-width:0}
+.ud-prop-grid input[type=checkbox]{justify-self:start}
+
+.ud-ac{position:fixed;z-index:9999;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 12px 40px rgba(0,0,0,.15);max-height:200px;overflow-y:auto;min-width:200px;display:none}
+.ud-ac-item{padding:5px 10px;font-size:11px;cursor:pointer;display:flex;justify-content:space-between;color:#374151}
+.ud-ac-item:hover,.ud-ac-item.sel{background:#eef2ff;color:#6366f1}
+.ud-ac-tag{font-size:10px;color:#9ca3af;background:#f3f4f6;padding:1px 5px;border-radius:3px}
+`).appendTo('head');
         }
-        this.panel=$(`<div class="ud-prop-panel" style="margin:4px 8px"></div>`);
-        this._buildParentCell();
-        this._buildRenderer();
-        this._buildLinkConfig();
-        this._buildCellType();
-        this.editorMap=new Map();
-        const simpleValueEditor=new SimpleValueEditor(this.panel,this.context);
-        this.editorMap.set('simple',simpleValueEditor);
-        const expressionValueEditor=new ExpressionValueEditor(this.panel,this.context);
-        this.editorMap.set('expression',expressionValueEditor);
-        const datasetValueEditor=new DatasetValueEditor(this.panel,this.context);
-        this.editorMap.set('dataset',datasetValueEditor);
-        const imageValueEditor=new ImageValueEditor(this.panel,this.context);
-        this.editorMap.set('image',imageValueEditor);
-        const slashValueEditor=new SlashValueEditor(this.panel,this.context);
-        this.editorMap.set('slash',slashValueEditor);
-        const zxingValueEditor=new ZxingValueEditor(this.panel,this.context);
-        this.editorMap.set('zxing',zxingValueEditor);
-
-        this.chartEditorMap=new Map();
-        this.chartEditorMap.set('bar',new BarChartValueEditor(this.panel,this.context));
-        this.chartEditorMap.set('line',new LineChartValueEditor(this.panel,this.context));
-        this.chartEditorMap.set('horizontalBar',new HorizontalBarChartValueEditor(this.panel,this.context));
-        this.chartEditorMap.set('area',new AreaChartValueEditor(this.panel,this.context));
-        this.chartEditorMap.set('radar',new RadarChartValueEditor(this.panel,this.context));
-        this.chartEditorMap.set('polarArea',new PolarChartValueEditor(this.panel,this.context));
-        this.chartEditorMap.set('scatter',new ScatterChartValueEditor(this.panel,this.context));
-        this.chartEditorMap.set('bubble',new BubbleChartValueEditor(this.panel,this.context));
-        this.chartEditorMap.set('doughnut',new DoughnutChartValueEditor(this.panel,this.context));
-        this.chartEditorMap.set('pie',new PieChartValueEditor(this.panel,this.context));
-
-        return this.panel;
+        this._build();
+        return this.el;
     }
 
-    _buildLinkConfig(){
-        const _this=this;
-        this.linkGroup=$(`<fieldset style="padding: 10px;border:solid 1px #dddddd;border-radius: 8px">
-        <legend style="width: auto;margin-bottom: 1px;border-bottom:none;font-size: inherit;color: #4b4b4b;">${window.i18n.property.prop.linkConfig}</legend></fieldset>`);
-        const urlGroup=$(`<div class="form-group" style="margin-bottom:8px"><label>URL(<span style="font-size: 12px;color: #747474" title="如:$\{# == '1' ? 'a.jsp' : 'b.jsp'}">支持表达式,表达式定义在$\{...}中</span>)：</label></div>`);
-        this.linkGroup.append(urlGroup);
-        this.linkEditor=$(`<input type="text" placeholder="如:$\{# == '1' ? 'a.jsp' : 'b.jsp'}" class="form-control" style="width:100%;height:28px;">`);
-        urlGroup.append(this.linkEditor);
-        this.linkEditor.change(function(){
-            _this.cellDef.linkUrl=$(this).val();
-            setDirty();
+    _build() {
+        this.el = $(`<div class="ud-prop"><div class="ud-prop-tabs">
+            <div class="ud-prop-tab on" data-tab="prop">属性</div>
+            <div class="ud-prop-tab" data-tab="style">样式</div>
+            <div class="ud-prop-tab" data-tab="advanced">高级</div>
+        </div></div>`);
+        const _ = this;
+        this.el.find('.ud-prop-tab').click(function () {
+            _.el.find('.ud-prop-tab').removeClass('on');
+            $(this).addClass('on');
+            _.el.find('.ud-pane').hide();
+            _.el.find(`.ud-pane-${$(this).data('tab')}`).show();
         });
-        const configGroup=$(`<div class="form-group" style="margin-bottom:0px"><label>${window.i18n.property.prop.target}</label></div>`);
-        this.linkGroup.append(configGroup);
-        this.targetSelect=$(`<select class="form-control" style="display: inline-block;width:100%;height:28px;">
-            <option value="_blank">${window.i18n.property.prop.newWindow}</option>
-            <option value="_self">${window.i18n.property.prop.currentWindow}</option>
-            <option value="_parent">${window.i18n.property.prop.parentWindow}</option>
-            <option value="_top">${window.i18n.property.prop.topWindow}</option>
-        </select>`);
-        configGroup.append(this.targetSelect);
-        this.targetSelect.change(function(){
-            _this.cellDef.linkTargetWindow=$(this).val();
-            setDirty();
-        });
-        const urlParameterDialog=new URLParameterDialog();
-        const parameterButton=$(`<button type="button" class="btn btn-primary" style="margin-left: 10px;font-size: 12px;height: 25px;padding: 4px 10px;">${window.i18n.property.prop.urlParameterConfig}</button>`);
-        configGroup.append(parameterButton);
-        parameterButton.click(function(){
-            if(!_this.cellDef.linkUrl || _this.cellDef.linkUrl===''){
-                alert(`${window.i18n.property.prop.urlTip}`);
-                return;
-            }
-            if(!_this.cellDef.linkParameters){
-                _this.cellDef.linkParameters=[];
-            }
-            urlParameterDialog.show(_this.cellDef.linkParameters);
-            setDirty();
-        });
-        this.panel.append(this.linkGroup);
-        this.linkGroup.hide();
-    }
 
-    _buildCellType(){
-        this.typeGruop=$(`<div class="form-group" style="margin-bottom:10px;margin-top: 10px;"><label>${window.i18n.property.prop.cellType}</label></div>`);
-        const radioName="__cell_value_type";
-        this.typeSelect=$(`<select class="form-control" style="display: inline-block;width:100%;padding: 3px;font-size: 12px;height: 25px;">
-            <option value="simple">${window.i18n.property.prop.text}</option>
-            <option value="expression">${window.i18n.property.prop.expr}</option>
-            <option value="dataset">${window.i18n.property.prop.dataset}</option>
-            <option value="image">${window.i18n.property.prop.image}</option>
-            <option value="slash">${window.i18n.property.prop.slash}</option>
-            <option value="qrcode">${window.i18n.property.prop.qrcode}</option>
-            <option value="barcode">${window.i18n.property.prop.barcode}</option>
-            <option value="chart">${window.i18n.property.prop.chart}</option>
-        </select>`);
-        this.typeGruop.append(this.typeSelect);
-        this.panel.append(this.typeGruop);
-        this.typeGruop.hide();
-        const _this=this;
-        this.typeSelect.change(function(){
-            for(let editor of _this.editorMap.values()){
-                editor.hide();
-            }
-            let cellDef=_this.cellDef;
-            let value=$(this).val();
-            if(value==='simple'){
-                if(cellDef.value.type!=='simple'){
-                    cellDef.value={type:'simple'};
-                }
-                cellDef.expand='None';
-                _this.editorMap.get('simple').show(_this.cellDef,_this.rowIndex,_this.colIndex,_this.row2Index,_this.col2Index);
-            }else if(value==='expression'){
-                if(cellDef.value.type!=='expression'){
-                    cellDef.value={type:'expression',value:''};
-                }
-                cellDef.expand='None';
-                _this.editorMap.get('expression').show(_this.cellDef,_this.rowIndex,_this.colIndex,_this.row2Index,_this.col2Index);
-            }else if(value==='dataset'){
-                if(cellDef.value.type!=='dataset'){
-                    cellDef.value={type:'dataset',datasetName:'',property:'',aggregate:'',conditions:[],order:'none'};
-                }
-                cellDef.expand='Down';
-                _this.editorMap.get('dataset').show(_this.cellDef,_this.rowIndex,_this.colIndex,_this.row2Index,_this.col2Index);
-            }else if(value==='image'){
-                if(cellDef.value.type!=='image'){
-                    cellDef.value={type:'image',source:'text'};
-                }
-                cellDef.expand='None';
-                _this.editorMap.get('image').show(_this.cellDef,_this.rowIndex,_this.colIndex,_this.row2Index,_this.col2Index);
-            }else if(value==='qrcode'){
-                if(cellDef.value.type!=='zxing' || cellDef.value.category!=='qrcode'){
-                    const rowIndex=_this.rowIndex,colIndex=this.colIndex;
-                    const td=_this.context.hot.getCell(rowIndex,colIndex);
-                    const width=_this._buildWidth(colIndex,td.colSpan,_this.context.hot);
-                    const height=_this._buildHeight(rowIndex,td.rowSpan,_this.context.hot);
-                    cellDef.value={width,height,type:'zxing',source:'text',category:'qrcode',data:''};
-                    cellDef.expand='None';
-                }
-                _this.editorMap.get('zxing').show(_this.cellDef,_this.rowIndex,_this.colIndex,_this.row2Index,_this.col2Index);
-            }else if(value==='barcode'){
-                if(cellDef.value.type!=='zxing' || cellDef.value.category!=='barcode'){
-                    const rowIndex=_this.rowIndex,colIndex=this.colIndex;
-                    const td=_this.context.hot.getCell(rowIndex,colIndex);
-                    const width=_this._buildWidth(colIndex,td.colSpan,_this.context.hot);
-                    const height=_this._buildHeight(rowIndex,td.rowSpan,_this.context.hot);
-                    cellDef.value={width,height,type:'zxing',source:'text',category:'barcode',data:'',format:'CODE_128'};
-                    cellDef.expand='None';
-                }
-                _this.editorMap.get('zxing').show(_this.cellDef,_this.rowIndex,_this.colIndex,_this.row2Index,_this.col2Index);
-            }else if(value==='slash'){
-                cellDef.crossTabWidget=new CrossTabWidget(_this.context,_this.rowIndex,_this.colIndex);
-                cellDef.expand='None';
-                _this.editorMap.get('slash').show(_this.cellDef,_this.rowIndex,_this.colIndex,_this.row2Index,_this.col2Index);
-            }else if(value==='chart'){
-                const rowIndex=_this.rowIndex,colIndex=this.colIndex;
-                const td=_this.context.hot.getCell(rowIndex,colIndex);
-                const width=_this._buildWidth(colIndex,td.colSpan,_this.context.hot);
-                const height=_this._buildHeight(rowIndex,td.rowSpan,_this.context.hot);
-                cellDef.value={
-                    width,
-                    height,
-                    type:'chart',
-                    chart:{
-                        dataset:{
-                            type:'pie'
-                        }
-                    }
-                };
-            }
-            _this.context.hot.setDataAtCell(_this.rowIndex,_this.colIndex,'');
-            _this.context.hot.render();
-            setDirty();
+        // Pane: Property
+        this.paneProp = $(`<div class="ud-pane ud-pane-prop"></div>`);
+        this._buildTypePills();
+        this._buildValueArea();
+        this._buildParentSection();
+        this._buildLinkSection();
+        this.el.append(this.paneProp);
+
+        // Pane: Style
+        this.paneStyle = $(`<div class="ud-pane ud-pane-style" style="display:none"></div>`);
+        this._buildStyleSection();
+        this.el.append(this.paneStyle);
+
+        // Pane: Advanced
+        this.paneAdv = $(`<div class="ud-pane ud-pane-advanced" style="display:none"></div>`);
+        this._buildRendererSection();
+        this.el.append(this.paneAdv);
+
+        // Editors
+        this.editorMap = new Map();
+        this.editorMap.set('simple', new SimpleValueEditor(this.valueArea, this.context));
+        this.editorMap.set('expression', new ExpressionValueEditor(this.valueArea, this.context));
+        this.editorMap.set('dataset', new DatasetValueEditor(this.valueArea, this.context));
+        this.editorMap.set('image', new ImageValueEditor(this.valueArea, this.context));
+        this.editorMap.set('slash', new SlashValueEditor(this.valueArea, this.context));
+        this.editorMap.set('zxing', new ZxingValueEditor(this.valueArea, this.context));
+        this.chartEditorMap = new Map();
+        ['bar','line','horizontalBar','area','radar','polarArea','scatter','bubble','doughnut','pie'].forEach(k => {
+            this.chartEditorMap.set(k, new (this._chartClass(k))(this.valueArea, this.context));
         });
     }
 
-    _buildParentCell(){
-        this.parentGroup=$(`<div></div>`);
-        const leftParentGroup=$(`<div class="form-group" style="margin-bottom:6px"><label>${window.i18n.property.prop.leftParent}</label></div>`);
-        this.parentGroup.append(leftParentGroup);
-        this.defaultLeftRadio=$(`<label class="checkbox-inline" style="padding-left: 2px"><input type="radio" class="__left_p_radio" name="__left_p_radio" value="default">${window.i18n.property.prop.default}</label>`);
-        leftParentGroup.append(this.defaultLeftRadio);
-        this.customLeftRadio=$(`<label class="checkbox-inline" style="padding-left: 2px"><input type="radio" class="__left_p_radio" name="__left_p_radio" value="custom">${window.i18n.property.prop.custom}</label>`);
-        leftParentGroup.append(this.customLeftRadio);
-
-        this.leftParentCellNameSelect=$(`<select class="form-control" disabled style="width: 70px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px"></select>`);
-        leftParentGroup.append(this.leftParentCellNameSelect);
-        this.leftParentRowNumberSelect=$(`<select class="form-control" disabled style="width: 50px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px"></select>`);
-        leftParentGroup.append(this.leftParentRowNumberSelect);
-        const _this=this;
-        this.leftParentCellNameSelect.change(function(){
-            let name=$(this).val();
-            if(name==='root'){
-                _this.leftParentRowNumberSelect.prop('disabled',true);
-                _this.leftParentRowNumberSelect.val('');
-                _this._setParentCell('root',true);
-            }else{
-                _this.leftParentRowNumberSelect.prop('disabled',false);
-                let num=_this.leftParentRowNumberSelect.val();
-                if(name!=='' && num!==''){
-                    _this._setParentCell(name+num,true);
-                }
-            }
-        });
-        this.leftParentRowNumberSelect.change(function(){
-            let name=_this.leftParentCellNameSelect.val();
-            if(name==='root'){
-                _this._setParentCell('root',true);
-            }else{
-                let num=$(this).val();
-                if(name!==''&& num!==''){
-                    _this._setParentCell(name+num,true);
-                }
-            }
-        });
-
-        this.defaultLeftRadio.children('input').click(function(){
-            _this.leftParentCellNameSelect.prop("disabled",true);
-            _this.leftParentRowNumberSelect.prop("disabled",true);
-            _this._setParentCell(null,true);
-        });
-        this.customLeftRadio.children('input').click(function(){
-            _this.leftParentCellNameSelect.prop("disabled",false);
-            _this.leftParentRowNumberSelect.prop("disabled",false);
-            setDirty();
-        });
-
-        const topParentGroup=$(`<div class="form-group" style="margin-bottom:6px"><label>${window.i18n.property.prop.topParent}</label></div>`);
-        this.parentGroup.append(topParentGroup);
-        this.defaultTopRadio=$(`<label class="checkbox-inline" style="padding-left: 2px"><input type="radio" name="__top_p_radio" value="default">${window.i18n.property.prop.default}</label>`);
-        topParentGroup.append(this.defaultTopRadio);
-        this.customTopRadio=$(`<label class="checkbox-inline" style="padding-left: 2px"><input type="radio" name="__top_p_radio" value="custom">${window.i18n.property.prop.custom}</label>`);
-        topParentGroup.append(this.customTopRadio);
-
-        this.topParentCellNameSelect=$(`<select class="form-control" disabled style="width: 70px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px;"></select>`);
-        topParentGroup.append(this.topParentCellNameSelect);
-        this.topParentRowNumberSelect=$(`<select class="form-control" disabled style="width: 50px;display: inline-block;margin-left: 10px;padding: 3px;font-size: 12px;height: 25px"></select>`);
-        topParentGroup.append(this.topParentRowNumberSelect);
-
-        this.topParentCellNameSelect.change(function(){
-            let name=$(this).val();
-            if(name==='root'){
-                _this.topParentRowNumberSelect.prop('disabled',true);
-                _this.topParentRowNumberSelect.val('');
-                _this._setParentCell('root',false);
-            }else{
-                _this.topParentRowNumberSelect.prop('disabled',false);
-                let num=_this.topParentRowNumberSelect.val();
-                if(name!=='' && num!==''){
-                    _this._setParentCell(name+num,false);
-                }
-            }
-        });
-        this.topParentRowNumberSelect.change(function(){
-            let name=_this.topParentCellNameSelect.val();
-            if(name==='root'){
-                _this._setParentCell('root',false);
-            }else{
-                let num=$(this).val();
-                if(name!=='' && num!==''){
-                    _this._setParentCell(name+num,false);
-                }
-            }
-        });
-
-
-        this.defaultTopRadio.children('input').click(function(){
-            _this.topParentCellNameSelect.prop("disabled",true);
-            _this.topParentRowNumberSelect.prop("disabled",true);
-            _this._setParentCell(null,false);
-        });
-        this.customTopRadio.children('input').click(function(){
-            _this.topParentCellNameSelect.prop("disabled",false);
-            _this.topParentRowNumberSelect.prop("disabled",false);
-        });
-
-        this.panel.append(this.parentGroup);
-        this.parentGroup.hide();
+    _chartClass(k) {
+        const m = {bar: BarChartValueEditor, line: LineChartValueEditor, horizontalBar: HorizontalBarChartValueEditor,
+            area: AreaChartValueEditor, radar: RadarChartValueEditor, polarArea: PolarChartValueEditor,
+            scatter: ScatterChartValueEditor, bubble: BubbleChartValueEditor, doughnut: DoughnutChartValueEditor,
+            pie: PieChartValueEditor};
+        return m[k];
     }
 
-    _setParentCell(cellName,isLeft){
-        if(this.initialized){
-            return;
-        }
-        for(let i=this.rowIndex;i<=this.row2Index;i++){
-            for(let j=this.colIndex;j<=this.col2Index;j++){
-                const cellDef=this.context.getCell(i,j);
-                if(!cellDef){
-                    continue;
-                }
-                if(isLeft){
-                    if(cellName){
-                        cellDef.leftParentCellName=cellName;
-                    }else{
-                        cellDef.leftParentCellName=null;
-                    }
-                }else{
-                    if(cellName){
-                        cellDef.topParentCellName=cellName;
-                    }else{
-                        cellDef.topParentCellName=null;
-                    }
-                }
+    _sec(title) {
+        const hd = $(`<div class="ud-prop-sec-hd"><span class="arr">▾</span>${title}</div>`);
+        const bd = $(`<div class="ud-prop-sec-bd"></div>`);
+        const sec = $(`<div class="ud-prop-sec"></div>`).append(hd, bd);
+        let folded = false;
+        hd.click(() => { folded = !folded; hd.toggleClass('folded', folded); bd.stop(true, true).slideToggle(120); });
+        return { sec, bd };
+    }
+
+    // ═══ Type Pills ═══
+    _buildTypePills() {
+        this.typePillsEl = $(`<div class="ud-prop-types"></div>`);
+        const _ = this;
+        TYPE_ITEMS.forEach(t => {
+            const btn = $(`<span class="ud-prop-type" data-v="${t.v}">${t.icon} ${t.label}</span>`);
+            btn.click(() => _._onTypeChange(t.v));
+            this.typePillsEl.append(btn);
+        });
+        this.paneProp.append(this.typePillsEl);
+    }
+
+    _buildValueArea() {
+        this.valueArea = $(`<div style="min-height:40px"></div>`);
+        this.paneProp.append(this.valueArea);
+    }
+
+    // ═══ Parent Section ═══
+    _buildParentSection() {
+        const { sec, bd } = this._sec('父格设置');
+        const _ = this;
+
+        // Left parent
+        bd.append(`<div class="ud-prop-row"><label>左父格</label></div>`);
+        const lr = $(`<div class="ud-prop-inline"></div>`);
+        this.dlRadio = $(`<label><input type="radio" name="__lp" value="default"> 默认</label>`);
+        this.clRadio = $(`<label><input type="radio" name="__lp" value="custom"> 自定义</label>`);
+        this.lpName = $(`<select disabled style="flex:1;min-width:0"></select>`);
+        this.lpRow = $(`<select disabled style="width:46px;flex-shrink:0"></select>`);
+        lr.append(this.dlRadio, this.clRadio, this.lpName, this.lpRow);
+        bd.append(lr);
+        this.dlRadio.find('input').click(() => { this.lpName.prop('disabled', true); this.lpRow.prop('disabled', true); this._setParent(null, true); });
+        this.clRadio.find('input').click(() => { this.lpName.prop('disabled', false); this.lpRow.prop('disabled', false); setDirty(); });
+        this.lpName.change(() => { const n = this.lpName.val(), r = this.lpRow.val(); if (n && r) this._setParent(n === 'root' ? 'root' : n + r, true); });
+        this.lpRow.change(() => { const n = this.lpName.val(), r = this.lpRow.val(); if (n && r) this._setParent(n === 'root' ? 'root' : n + r, true); });
+
+        // Top parent
+        bd.append(`<div class="ud-prop-row"><label>上父格</label></div>`);
+        const tr = $(`<div class="ud-prop-inline"></div>`);
+        this.dtRadio = $(`<label><input type="radio" name="__tp" value="default"> 默认</label>`);
+        this.ctRadio = $(`<label><input type="radio" name="__tp" value="custom"> 自定义</label>`);
+        this.tpName = $(`<select disabled style="flex:1;min-width:0"></select>`);
+        this.tpRow = $(`<select disabled style="width:46px;flex-shrink:0"></select>`);
+        tr.append(this.dtRadio, this.ctRadio, this.tpName, this.tpRow);
+        bd.append(tr);
+        this.dtRadio.find('input').click(() => { this.tpName.prop('disabled', true); this.tpRow.prop('disabled', true); this._setParent(null, false); });
+        this.ctRadio.find('input').click(() => { this.tpName.prop('disabled', false); this.tpRow.prop('disabled', false); });
+        this.tpName.change(() => { const n = this.tpName.val(), r = this.tpRow.val(); if (n && r) this._setParent(n === 'root' ? 'root' : n + r, false); });
+        this.tpRow.change(() => { const n = this.tpName.val(), r = this.tpRow.val(); if (n && r) this._setParent(n === 'root' ? 'root' : n + r, false); });
+
+        this.paneProp.append(sec);
+    }
+
+    // ═══ Link Section ═══
+    _buildLinkSection() {
+        const { sec, bd } = this._sec('链接配置');
+        const _ = this;
+        bd.append(`<div class="ud-prop-row"><label>URL <span class="ud-prop-hint">支持表达式</span></label></div>`);
+        this.linkEditor = $(`<div style="position:relative"><input type="text" placeholder="如 param('id') 或 &A1"></div>`);
+        this.linkEditor.find('input').change(function () { _.cellDef.linkUrl = this.value; setDirty(); });
+        bd.append(this.linkEditor);
+
+        bd.append(`<div class="ud-prop-row" style="margin-top:3px"><label>打开方式</label></div>`);
+        const tr = $(`<div class="ud-prop-inline"></div>`);
+        this.targetSelect = $(`<select style="flex:1"><option value="_blank">新窗口</option><option value="_self">当前窗口</option></select>`);
+        this.targetSelect.change(function () { _.cellDef.linkTargetWindow = this.value; setDirty(); });
+        const pb = $(`<button class="btn btn-default" style="flex-shrink:0">参数配置</button>`);
+        pb.click(() => {
+            if (!_.cellDef.linkUrl) { alert('请先填写URL'); return; }
+            if (!_.cellDef.linkParameters) _.cellDef.linkParameters = [];
+            new URLParameterDialog().show(_.cellDef.linkParameters);
+            setDirty();
+        });
+        tr.append(this.targetSelect, pb);
+        bd.append(tr);
+        this.paneProp.append(sec);
+    }
+
+    // ═══ Style Section (Grid Layout) ═══
+    _buildStyleSection() {
+        this.styleInputs = {};
+        const grid = $(`<div class="ud-prop-grid"></div>`);
+        const _ = this;
+        STYLE_FIELDS.forEach(([label, key, type, opts]) => {
+            grid.append(`<label>${label}</label>`);
+            let input;
+            if (type === 'sel') {
+                input = $(`<select>${opts.split('|').map(o => `<option value="${o}">${o}</option>`).join('')}</select>`);
+            } else if (type === 'cb') {
+                input = $(`<input type="checkbox">`);
+            } else {
+                input = $(`<input type="${type}">`);
             }
-        }
+            input.on('change input', () => { _._onStyleChange(); setDirty(); });
+            this.styleInputs[key] = input;
+            grid.append(input);
+        });
+        this.paneStyle.append(grid);
+    }
+
+    // ═══ Renderer Section ═══
+    _buildRendererSection() {
+        const { bd } = this._sec('渲染器');
+        this.rendererEditor = $(`<input type="text" placeholder="Spring Bean 名称">`);
+        this.rendererEditor.change(() => this._setRenderer(this.rendererEditor.val()));
+        bd.append(this.rendererEditor);
+        const sec = this.paneAdv.find('.ud-prop-sec');
+    }
+
+    // ═══ Type Change ═══
+    _onTypeChange(type) {
+        if (!this.cellDef) return;
+        for (let e of this.editorMap.values()) e.hide();
+        for (let e of this.chartEditorMap.values()) e.hide();
+        const cd = this.cellDef, ri = this.rowIndex, ci = this.colIndex, r2 = this.row2Index, c2 = this.col2Index;
+        if (type === 'simple') { if (cd.value.type !== 'simple') cd.value = { type: 'simple' }; cd.expand = 'None'; this.editorMap.get('simple').show(cd, ri, ci, r2, c2); }
+        else if (type === 'expression') { if (cd.value.type !== 'expression') cd.value = { type: 'expression', value: '' }; cd.expand = 'None'; this.editorMap.get('expression').show(cd, ri, ci, r2, c2); }
+        else if (type === 'dataset') { if (cd.value.type !== 'dataset') cd.value = { type: 'dataset', datasetName: '', property: '', aggregate: '', conditions: [], order: 'none' }; cd.expand = 'Down'; this.editorMap.get('dataset').show(cd, ri, ci, r2, c2); }
+        else if (type === 'image') { if (cd.value.type !== 'image') cd.value = { type: 'image', source: 'text' }; cd.expand = 'None'; this.editorMap.get('image').show(cd, ri, ci, r2, c2); }
+        else if (type === 'qrcode' || type === 'barcode') { const cat = type === 'qrcode' ? 'qrcode' : 'barcode'; if (cd.value.type !== 'zxing' || cd.value.category !== cat) { const td = this.context.hot.getCell(ri, ci); cd.value = { width: this._cellW(ci, td.colSpan), height: this._cellH(ri, td.rowSpan), type: 'zxing', source: 'text', category: cat, data: '', format: type === 'barcode' ? 'CODE_128' : '' }; cd.expand = 'None'; } this.editorMap.get('zxing').show(cd, ri, ci, r2, c2); }
+        else if (type === 'slash') { cd.crossTabWidget = new CrossTabWidget(this.context, ri, ci); cd.expand = 'None'; this.editorMap.get('slash').show(cd, ri, ci, r2, c2); }
+        else if (type === 'chart') { const td = this.context.hot.getCell(ri, ci); cd.value = { width: this._cellW(ci, td.colSpan), height: this._cellH(ri, td.rowSpan), type: 'chart', chart: { dataset: { type: 'pie' } } }; }
+        this._updatePills(type);
+        this.context.hot.setDataAtCell(ri, ci, '');
+        this.context.hot.render();
         setDirty();
     }
 
-    _buildParentCellNameOptions(select){
-        select.empty();
-        const hot=this.context.hot;
-        const countCols=hot.countCols();
-        select.append(`<option value="root">${window.i18n.property.prop.none}</option>`);
-        for(let j=0;j<countCols;j++){
-            let name=this.context.getCellName(null,j);
-            select.append(`<option value="${name}">${name}</option>`);
-        }
-    }
-    _buildParentRowNumberOptions(select){
-        select.empty();
-        const hot=this.context.hot;
-        const countRows=hot.countRows();
-        select.append(`<option></option>`);
-        for(let j=0;j<countRows;j++){
-            select.append(`<option>${j+1}</option>`);
-        }
-    }
-    _buildRenderer(){
-        this.rendererGroup=$(`<div class="form-group" style="margin-bottom:6px"><label>${window.i18n.property.prop.renderBean}</label></div>`);
-        const rendererBeanEditorGroup=$(`<div class="input-group" style="max-width:100%;display:flex;"></div>`);
-        this.rendererGroup.append(rendererBeanEditorGroup);
-        this.rendererBeanEditor=$(`<input type="text" class="form-control" style="flex:1;min-width:0">`);
-        rendererBeanEditorGroup.append(this.rendererBeanEditor);
-        const addon=$(`<span class="input-group-btn"></span>`);
-        const selectButton=$(`<button type="button" class="btn btn-default">${window.i18n.property.prop.selectBean}</button>`);
-        addon.append(selectButton);
-        rendererBeanEditorGroup.append(addon);
-        const _this=this;
-        selectButton.click(function(){
-
-        });
-        this.panel.append(this.rendererGroup);
-        this.rendererBeanEditor.change(function(){
-            _this._setRenderer($(this).val());
-        });
-        this.rendererGroup.hide();
+    _updatePills(active) {
+        this.typePillsEl.find('.ud-prop-type').each(function () { $(this).toggleClass('on', $(this).data('v') === active); });
+        if (active === 'qrcode' || active === 'barcode') this.typePillsEl.find('.ud-prop-type[data-v="qrcode"]').addClass('on');
     }
 
-    _setRenderer(renderer){
-        if(this.initialized){
-            return;
-        }
-        for(let i=this.rowIndex;i<=this.row2Index;i++){
-            for(let j=this.colIndex;j<=this.col2Index;j++){
-                const cellDef=this.context.getCell(i,j);
-                if(!cellDef){
-                    continue;
-                }
-                cellDef.renderer=renderer;
-            }
-        }
-        setDirty();
-    }
+    // ═══ Helpers ═══
+    _setParent(name, isLeft) { if (this.initialized) return; for (let i = this.rowIndex; i <= this.row2Index; i++) for (let j = this.colIndex; j <= this.col2Index; j++) { const cd = this.context.getCell(i, j); if (!cd) continue; if (isLeft) cd.leftParentCellName = name; else cd.topParentCellName = name; } setDirty(); }
+    _buildOpts(sel, prefix) { sel.empty(); sel.append(`<option value="root">无</option>`); for (let j = 0; j < this.context.hot.countCols(); j++) { const n = this.context.getCellName(null, j); sel.append(`<option value="${n}">${n}</option>`); } }
+    _buildRowOpts(sel) { sel.empty(); sel.append(`<option></option>`); for (let j = 0; j < this.context.hot.countRows(); j++) sel.append(`<option>${j + 1}</option>`); }
+    _parse(cn) { let p = -1; for (let i = 0; i < cn.length; i++) if (!isNaN(parseInt(cn.charAt(i)))) { p = i; break; } return { name: cn.substring(0, p), num: cn.substring(p) }; }
+    _cellW(ci, cs) { let w = this.context.hot.getColWidth(ci) - 3; if (cs >= 2) for (let i = ci + 1; i < ci + cs; i++) w += this.context.hot.getColWidth(i); return w; }
+    _cellH(ri, rs) { let h = this.context.hot.getRowHeight(ri) - 3; if (rs >= 2) for (let i = ri + 1; i < ri + rs; i++) h += this.context.hot.getRowHeight(i); return h; }
+    _setRenderer(r) { if (this.initialized) return; for (let i = this.rowIndex; i <= this.row2Index; i++) for (let j = this.colIndex; j <= this.col2Index; j++) { const cd = this.context.getCell(i, j); if (cd) cd.renderer = r; } setDirty(); }
+    _onStyleChange() { if (!this.cellDef) return; let cs = this.cellDef.cellStyle; if (!cs) { cs = {}; this.cellDef.cellStyle = cs; } for (let [k, el] of Object.entries(this.styleInputs)) { const v = el.is(':checkbox') ? el.prop('checked') : el.val(); if (v !== '' && v !== false) cs[k] = v; } }
 
-    refresh(rowIndex,colIndex,row2Index,col2Index){
-        const cellDef=this.context.getCell(rowIndex,colIndex);
-        if(!cellDef){
-            return;
-        }
-        this.cellDef=cellDef;
-        let currentCellName=this.context.getCellName(rowIndex,colIndex);
-        $('#__prop_tab_link').html(`${window.i18n.property.prop.prop}[${currentCellName}]`);
-        this.rowIndex=rowIndex;
-        this.colIndex=colIndex;
-        this.row2Index=row2Index;
-        this.col2Index=col2Index;
-        this.parentGroup.show();
-        this.typeGruop.show();
-        this.linkGroup.show();
-        //this.rendererGroup.show();
-        this.initialized=true;
-        this.linkEditor.val(cellDef.linkUrl);
-        this.targetSelect.val(cellDef.linkTargetWindow);
+    // ═══ Refresh — populate panel from cell ═══
+    refresh(ri, ci, r2, c2) {
+        const cd = this.context.getCell(ri, ci);
+        if (!cd) return;
+        this.cellDef = cd;
+        this.initialized = true;
+        this.rowIndex = ri; this.colIndex = ci; this.row2Index = r2; this.col2Index = c2;
+        $('#__prop_tab_link').html(`属性[${this.context.getCellName(ri, ci)}]`);
 
-        this._buildParentCellNameOptions(this.leftParentCellNameSelect);
-        this._buildParentRowNumberOptions(this.leftParentRowNumberSelect);
-        this._buildParentCellNameOptions(this.topParentCellNameSelect);
-        this._buildParentRowNumberOptions(this.topParentRowNumberSelect);
-        const leftParentCellName=cellDef.leftParentCellName;
-        if(leftParentCellName){
-            this.customLeftRadio.trigger('click');
-            if(leftParentCellName==='root'){
-                this.leftParentCellNameSelect.val('root');
-                this.leftParentRowNumberSelect.val('');
-            }else{
-                let data=this._parseCellName(leftParentCellName);
-                this.leftParentCellNameSelect.val(data.name);
-                this.leftParentRowNumberSelect.val(data.num);
-            }
-            this.leftParentCellNameSelect.prop('disabled',false);
-            this.leftParentRowNumberSelect.prop('disabled',false);
-            this.leftParentCellNameSelect.trigger('change');
-        }else{
-            this.defaultLeftRadio.trigger('click');
-            if(colIndex===0){
-                this.leftParentCellNameSelect.val('root');
-                this.leftParentRowNumberSelect.val('');
-            }else{
-                let row=rowIndex,col=colIndex-1;
-                let td=this.context.hot.getCell(row,col);
-                if($(td).css('display')==='none'){
-                    let mergeCells=this.context.hot.getSettings().mergeCells;
-                    for(let item of mergeCells){
-                        let rowStart=item.row,rowspan=item.rowspan,colStart=item.col,colspan=item.colspan;
-                        let rowEnd=rowStart+rowspan-1,colEnd=colStart+colspan-1;
-                        if(row>=rowStart && row<=rowEnd && col>=colStart && col<=colEnd){
-                            row=rowStart,col=colStart;
-                            break;
-                        }
-                    }
-                }
-                let cellName=this.context.getCellName(row,col);
-                let data=this._parseCellName(cellName);
-                this.leftParentCellNameSelect.val(data.name);
-                this.leftParentRowNumberSelect.val(data.num);
-            }
-            this.leftParentCellNameSelect.prop('disabled',true);
-            this.leftParentRowNumberSelect.prop('disabled',true);
-        }
-        const topParentCellName=cellDef.topParentCellName;
-        if(topParentCellName){
-            this.customTopRadio.trigger('click');
-            if(topParentCellName==='root'){
-                this.topParentCellNameSelect.val('root');
-                this.topParentRowNumberSelect.val('');
-            }else{
-                let data=this._parseCellName(topParentCellName);
-                this.topParentCellNameSelect.val(data.name);
-                this.topParentRowNumberSelect.val(data.num);
-            }
-            this.topParentCellNameSelect.prop('disabled',false);
-            this.topParentRowNumberSelect.prop('disabled',false);
-            this.topParentCellNameSelect.trigger('change');
-        }else{
-            this.defaultTopRadio.trigger('click');
-            if(rowIndex===0){
-                this.topParentCellNameSelect.val('root');
-                this.topParentRowNumberSelect.val('');
-            }else{
-                let row=rowIndex-1,col=colIndex;
-                let td=this.context.hot.getCell(row,col);
-                if($(td).css('display')==='none'){
-                    let mergeCells=this.context.hot.getSettings().mergeCells;
-                    for(let item of mergeCells){
-                        let rowStart=item.row,rowspan=item.rowspan,colStart=item.col,colspan=item.colspan;
-                        let rowEnd=rowStart+rowspan-1,colEnd=colStart+colspan-1;
-                        if(row>=rowStart && row<=rowEnd && col>=colStart && col<=colEnd){
-                            row=rowStart,col=colStart;
-                            break;
-                        }
-                    }
-                }
+        // Parent
+        this._buildOpts(this.lpName); this._buildRowOpts(this.lpRow);
+        this._buildOpts(this.tpName); this._buildRowOpts(this.tpRow);
+        const lp = cd.leftParentCellName;
+        if (lp) { this.clRadio.find('input').prop('checked', true).trigger('click'); this.lpName.prop('disabled', false); this.lpRow.prop('disabled', false); if (lp === 'root') { this.lpName.val('root'); } else { const d = this._parse(lp); this.lpName.val(d.name); this.lpRow.val(d.num); } } else { this.dlRadio.find('input').prop('checked', true).trigger('click'); }
+        const tp = cd.topParentCellName;
+        if (tp) { this.ctRadio.find('input').prop('checked', true).trigger('click'); this.tpName.prop('disabled', false); this.tpRow.prop('disabled', false); if (tp === 'root') { this.tpName.val('root'); } else { const d = this._parse(tp); this.tpName.val(d.name); this.tpRow.val(d.num); } } else { this.dtRadio.find('input').prop('checked', true).trigger('click'); }
 
-                let cellName=this.context.getCellName(row,col);
-                let data=this._parseCellName(cellName);
-                this.topParentCellNameSelect.val(data.name);
-                this.topParentRowNumberSelect.val(data.num);
-            }
-            this.topParentCellNameSelect.prop('disabled',true);
-            this.topParentRowNumberSelect.prop('disabled',true);
-        }
-        const cellStyle=cellDef.cellStyle;
-        if(cellStyle.renderer){
-            this.rendererBeanEditor.val(cellStyle.renderer);
-        }else{
-            this.rendererBeanEditor.val("");
-        }
-        let type=cellDef.value.type || 'simple';
-        if(type==='zxing'){
-            const category=cellDef.value.category;
-            this.typeSelect.val(category);
-        }else{
-            this.typeSelect.val(type);
-        }
-        for(let editor of this.editorMap.values()){
-            editor.hide();
-        }
-        for(let editor of this.chartEditorMap.values()){
-            editor.hide();
-        }
-        if(type==='chart'){
-            const chartType=cellDef.value.chart.dataset.type;
-            this.chartEditorMap.get(chartType).show(cellDef,rowIndex,colIndex,row2Index,col2Index);
-        }else{
-            this.editorMap.get(type).show(cellDef,rowIndex,colIndex,row2Index,col2Index);
-        }
-        this.initialized=false;
-    }
+        // Link
+        this.linkEditor.find('input').val(cd.linkUrl || '');
+        this.targetSelect.val(cd.linkTargetWindow || '_blank');
 
-    _parseCellName(cellName){
-        let pos=-1;
-        for(let i=0;i<cellName.length;i++){
-            let char=cellName.charAt(i);
-            let num=parseInt(char);
-            if(!isNaN(num)){
-                pos=i;
-                break;
-            }
-        }
-        const name=cellName.substring(0,pos);
-        const num=cellName.substring(pos,cellName.length);
-        return {name,num};
-    }
+        // Renderer
+        this.rendererEditor.val((cd.cellStyle && cd.cellStyle.renderer) || '');
 
-    _buildWidth(colIndex,colspan,hot){
-        let width=hot.getColWidth(colIndex)-3;
-        if(!colspan || colspan<2){
-            return width;
+        // Style
+        const cs = cd.cellStyle || {};
+        for (let [k, el] of Object.entries(this.styleInputs)) {
+            if (el.is(':checkbox')) el.prop('checked', !!cs[k]);
+            else el.val(cs[k] || '');
         }
-        let start=colIndex+1,end=colIndex+colspan;
-        for(let i=start;i<end;i++){
-            width+=hot.getColWidth(i);
-        }
-        return width;
-    }
 
-    _buildHeight(rowIndex,rowspan,hot){
-        let height=hot.getRowHeight(rowIndex)-3;
-        if(!rowspan || rowspan<2){
-            return height;
+        // Type
+        let type = cd.value.type || 'simple';
+        if (type === 'zxing') type = cd.value.category || 'qrcode';
+        this._updatePills(type);
+
+        for (let e of this.editorMap.values()) e.hide();
+        for (let e of this.chartEditorMap.values()) e.hide();
+        if (type === 'chart') {
+            const ct = (cd.value.chart && cd.value.chart.dataset) ? cd.value.chart.dataset.type : 'pie';
+            const ce = this.chartEditorMap.get(ct);
+            if (ce) ce.show(cd, ri, ci, r2, c2);
+        } else {
+            const e = this.editorMap.get(type);
+            if (e) e.show(cd, ri, ci, r2, c2);
         }
-        let start=rowIndex+1,end=rowIndex+rowspan;
-        for(let i=start;i<end;i++){
-            height+=hot.getRowHeight(i);
-        }
-        return height;
+        this.initialized = false;
+        // Scroll value area into view if needed
+        this.el.scrollTop(0);
     }
 }

@@ -421,6 +421,12 @@
         <input type="text" id="searchInput" placeholder="搜索报表名称..." oninput="filterReports()">
     </div>
     <div class="topnav-actions">
+        <button class="btn btn-secondary" onclick="showExportDialog()" title="导出报表备份">
+            <span class="glyphicon glyphicon-export"></span> 导出
+        </button>
+        <button class="btn btn-secondary" onclick="showImportDialog()" title="导入报表备份">
+            <span class="glyphicon glyphicon-import"></span> 导入
+        </button>
         <a href="${contextPath}/ureport/designer" class="btn btn-primary">
             <span class="glyphicon glyphicon-plus"></span> 新建报表
         </a>
@@ -534,7 +540,141 @@
 
 </div>
 
+<!-- ===== Export Modal ===== -->
+<div id="exportModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.3);z-index:200;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)">
+        <h3 style="margin:0 0 16px;font-size:16px;font-weight:600">📦 导出报表备份</h3>
+        <div style="margin-bottom:12px">
+            <label style="cursor:pointer"><input type="checkbox" id="exportSelectAll" onchange="toggleSelectAll(this)" checked> 全选</label>
+        </div>
+        <div id="exportFileList" style="max-height:300px;overflow-y:auto;margin-bottom:16px;border:1px solid #e5e7eb;border-radius:8px;padding:8px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeExportDialog()" style="padding:8px 20px">取消</button>
+            <button class="btn btn-primary" onclick="doExport()" style="padding:8px 20px">导出选中报表</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Import Modal ===== -->
+<div id="importModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.3);z-index:200;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15)">
+        <h3 style="margin:0 0 16px;font-size:16px;font-weight:600">📥 导入报表备份</h3>
+        <div style="margin-bottom:12px">
+            <input type="file" id="importFileInput" accept=".ureportplus.bak" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px">
+        </div>
+        <div style="margin-bottom:16px">
+            <label style="font-weight:500;font-size:13px;margin-bottom:4px;display:block">同名报表处理方式：</label>
+            <select id="conflictStrategy" style="width:100%;padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px">
+                <option value="rename">保留原文件（导入文件重命名为 _copy）</option>
+                <option value="overwrite">覆盖原文件</option>
+            </select>
+        </div>
+        <div id="importResult" style="display:none;margin-bottom:12px;padding:10px;border-radius:8px;font-size:13px;line-height:1.6"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeImportDialog()" style="padding:8px 20px">取消</button>
+            <button class="btn btn-primary" onclick="doImport()" style="padding:8px 20px">开始导入</button>
+        </div>
+    </div>
+</div>
+
 <script>
+#[[
+    // ===== Backup Export =====
+    let allReportFiles = [];
+
+    function showExportDialog() {
+        document.getElementById('exportModal').style.display = 'flex';
+        fetch(window._contextPath + '/ureport/backup/list')
+            .then(r => r.json())
+            .then(files => {
+                allReportFiles = files;
+                const list = document.getElementById('exportFileList');
+                list.innerHTML = files.map((f, i) =>
+                    `<div style="padding:6px 8px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px">
+                        <input type="checkbox" class="export-cb" value="${i}" checked>
+                        <span style="font-size:13px;flex:1">${f.name}</span>
+                        <span style="font-size:11px;color:#9ca3af">${f.prefix || ''}</span>
+                    </div>`
+                ).join('');
+                document.getElementById('exportSelectAll').checked = true;
+            });
+    }
+
+    function closeExportDialog() { document.getElementById('exportModal').style.display = 'none'; }
+    function toggleSelectAll(el) {
+        document.querySelectorAll('.export-cb').forEach(cb => cb.checked = el.checked);
+    }
+
+    function doExport() {
+        const selected = [];
+        document.querySelectorAll('.export-cb:checked').forEach(cb => {
+            const f = allReportFiles[parseInt(cb.value)];
+            if (f) selected.push(f.fullName || (f.prefix + f.name));
+        });
+        if (selected.length === 0) { alert('请选择要导出的报表'); return; }
+
+        fetch(window._contextPath + '/ureport/backup/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ names: selected })
+        }).then(r => r.blob()).then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ureportplus-backup.ureportplus.bak';
+            a.click();
+            URL.revokeObjectURL(url);
+            closeExportDialog();
+        });
+    }
+
+    // ===== Backup Import =====
+    function showImportDialog() {
+        document.getElementById('importModal').style.display = 'flex';
+        document.getElementById('importResult').style.display = 'none';
+        document.getElementById('importFileInput').value = '';
+    }
+
+    function closeImportDialog() { document.getElementById('importModal').style.display = 'none'; }
+
+    function doImport() {
+        const fileInput = document.getElementById('importFileInput');
+        const file = fileInput.files[0];
+        if (!file) { alert('请选择备份文件'); return; }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('conflictStrategy', document.getElementById('conflictStrategy').value);
+
+        const resultDiv = document.getElementById('importResult');
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = '#f9fafb';
+        resultDiv.textContent = '导入中…';
+
+        fetch(window._contextPath + '/ureport/backup/import', {
+            method: 'POST',
+            body: formData
+        }).then(r => r.json()).then(d => {
+            let html = '';
+            if (d.success) {
+                resultDiv.style.background = '#f0fdf4';
+                if (d.imported && d.imported.length) html += '✅ 已导入: ' + d.imported.join(', ') + '<br>';
+                if (d.renamed && d.renamed.length) html += '📝 已重命名: ' + d.renamed.join(', ') + '<br>';
+                if (d.skipped && d.skipped.length) html += '⚠️ 已跳过: ' + d.skipped.join(', ') + '<br>';
+                if (html === '') html = '✅ 导入完成';
+            } else {
+                resultDiv.style.background = '#fef2f2';
+                html = '❌ ' + (d.error || '导入失败');
+            }
+            resultDiv.innerHTML = html;
+            if (d.success) setTimeout(() => location.reload(), 1500);
+        }).catch(err => {
+            resultDiv.style.background = '#fef2f2';
+            resultDiv.innerHTML = '❌ 导入失败: ' + err.message;
+        });
+    }
+
+    // ===== Search =====
     function filterReports() {
         var query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
         var cards = document.querySelectorAll('#reportGrid .report-card');
@@ -552,6 +692,7 @@
             noResults.style.display = visible === 0 && query !== '' ? 'block' : 'none';
         }
     }
+]]#
 </script>
 
 </body>

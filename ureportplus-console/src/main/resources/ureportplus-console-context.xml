@@ -60,4 +60,6 @@
 
 	<bean id="ureportplus.exampleInitializer" class="com.kingint.ureportplus.console.ExampleInitializer"/>
 
+	<bean id="ureportplus.backupServletAction" class="com.kingint.ureportplus.console.backup.BackupServletAction"/>
+
 </beans>
