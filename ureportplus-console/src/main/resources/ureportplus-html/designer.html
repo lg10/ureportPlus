@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="${contextPath}/ureport/res/ureportplus-asserts/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<link href="${contextPath}/ureport/res/ureportplus-asserts/css/handsontable.min.css" rel="stylesheet" type="text/css" />
+<title>UReportPlus Designer</title>
+ <script type="text/javascript" src="${contextPath}/ureport/res/ureportplus-asserts/venderjs/jquery.min.js"></script>
+ <script type="text/javascript" src="${contextPath}/ureport/res/ureportplus-asserts/venderjs/jquery.contextMenu.min.js"></script>
+ <script type="text/javascript" src="${contextPath}/ureport/res/ureportplus-asserts/venderjs/completer.min.js"></script>
+ <script type="text/javascript" src="${contextPath}/ureport/res/ureportplus-asserts/venderjs/bootstrap-colorpicker.min.js"></script>
+ <script type="text/javascript" src="${contextPath}/ureport/res/ureportplus-asserts/js/common.bundle.js"></script>
+</head>
+<body style="margin:0px">
+<div id='container'></div>
+	<script type="text/javascript">
+		window._server="${contextPath}/ureport";
+		window._contextPath="${contextPath}";
+		window._saveReport = function() {
+			if (!window._reportFile) return;
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', window._server + '/designer/saveReportFile', true);
+			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+			var content = window._lastXml || '';
+			xhr.send('content=' + encodeURIComponent(content) + '&file=' + encodeURIComponent(window._reportFile));
+			xhr.onload = function() {
+				if (xhr.status === 200) {
+					var toast = document.createElement('div');
+					toast.textContent = '✓ 已保存';
+					toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;background:#16a34a;color:#fff;padding:8px 24px;border-radius:8px;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.15);pointer-events:none';
+					document.body.appendChild(toast);
+					setTimeout(function(){ toast.style.opacity='0'; toast.style.transition='opacity .3s'; setTimeout(function(){ toast.remove(); },300); },1500);
+				}
+			};
+		};
+		document.addEventListener('keydown', function(e) {
+			if ((e.ctrlKey || e.metaKey) && e.keyCode === 83) {
+				e.preventDefault();
+				e.stopPropagation();
+				window._saveReport();
+				return false;
+			}
+		}, true);
+	</script>
+	<script type="text/javascript" src="${contextPath}/ureport/res/ureportplus-asserts/js/designer.bundle.js"></script>
+
+
+</body>
+</html>

@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link href="${contextPath}/ureport/res/ureportplus-asserts/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UReportPlus · 报表管理中心</title>
+<style>
+    :root {
+        --color-primary: #4f46e5;
+        --color-primary-hover: #4338ca;
+        --color-primary-light: #eef2ff;
+        --color-primary-bg: #e0e7ff;
+        --color-text: #111827;
+        --color-text-secondary: #6b7280;
+        --color-text-muted: #9ca3af;
+        --color-border: #e5e7eb;
+        --color-bg: #f9fafb;
+        --color-card: #ffffff;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        background: var(--color-bg);
+        color: var(--color-text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ========== Top Navigation ========== */
+    .topnav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--color-border);
+        height: 64px;
+        display: flex;
+        align-items: center;
+        padding: 0 32px;
+        gap: 24px;
+    }
+    .topnav-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+        text-decoration: none;
+    }
+    .topnav-logo {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 18px;
+    }
+    .topnav-title {
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--color-text);
+        letter-spacing: -0.3px;
+    }
+    .topnav-badge {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--color-primary);
+        background: var(--color-primary-light);
+        padding: 2px 8px;
+        border-radius: 99px;
+        margin-left: 4px;
+    }
+    .topnav-search {
+        flex: 1;
+        max-width: 480px;
+        position: relative;
+    }
+    .topnav-search input {
+        width: 100%;
+        height: 40px;
+        padding: 0 16px 0 40px;
+        border: 1px solid var(--color-border);
+        border-radius: 99px;
+        font-size: 14px;
+        color: var(--color-text);
+        background: var(--color-bg);
+        outline: none;
+        transition: all 0.2s;
+    }
+    .topnav-search input:focus {
+        border-color: var(--color-primary);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+    }
+    .topnav-search input::placeholder { color: var(--color-text-muted); }
+    .topnav-search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-text-muted);
+        font-size: 16px;
+        pointer-events: none;
+    }
+    .topnav-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+    }
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        font-size: 14px;
+        padding: 8px 20px;
+        border-radius: 99px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .btn-primary {
+        background: var(--color-primary);
+        color: #fff;
+    }
+    .btn-primary:hover {
+        background: var(--color-primary-hover);
+        box-shadow: var(--shadow-md);
+        color: #fff;
+        text-decoration: none;
+    }
+    .btn-secondary {
+        background: #fff;
+        color: var(--color-text);
+        border: 1px solid var(--color-border);
+    }
+    .btn-secondary:hover {
+        background: var(--color-bg);
+        text-decoration: none;
+    }
+    .btn-sm {
+        font-size: 13px;
+        padding: 5px 14px;
+    }
+    .btn-xs {
+        font-size: 12px;
+        padding: 4px 10px;
+    }
+
+    /* ========== Main Content ========== */
+    .main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 32px 60px;
+    }
+
+    /* ========== Stats Row ========== */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+    .stat-card {
+        background: var(--color-card);
+        border-radius: var(--radius-md);
+        padding: 20px 24px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--color-border);
+        transition: all 0.2s;
+    }
+    .stat-card:hover {
+        box-shadow: var(--shadow-md);
+        border-color: #d1d5db;
+    }
+    .stat-card-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-bottom: 12px;
+    }
+    .stat-card-icon.blue   { background: #eff6ff; color: #3b82f6; }
+    .stat-card-icon.amber  { background: #fffbeb; color: #f59e0b; }
+    .stat-card-icon.green  { background: #f0fdf4; color: #22c55e; }
+    .stat-card-icon.indigo { background: var(--color-primary-light); color: var(--color-primary); }
+    .stat-card-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--color-text);
+        letter-spacing: -0.5px;
+        line-height: 1;
+    }
+    .stat-card-label {
+        font-size: 13px;
+        color: var(--color-text-secondary);
+        margin-top: 4px;
+    }
+
+    /* ========== Sections ========== */
+    .section {
+        margin-bottom: 32px;
+    }
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--color-text);
+        letter-spacing: -0.3px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .section-title .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-primary);
+    }
+    .section-count {
+        font-size: 13px;
+        color: var(--color-text-muted);
+        font-weight: 400;
+    }
+
+    /* ========== Report Grid ========== */
+    .report-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 12px;
+    }
+    .report-card {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 18px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    .report-card:hover {
+        box-shadow: var(--shadow-md);
+        border-color: #c7d2fe;
+    }
+    .report-card-info {
+        min-width: 0;
+        flex: 1;
+    }
+    .report-card-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .report-card-meta {
+        font-size: 12px;
+        color: var(--color-text-muted);
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .report-card-meta .meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 12px;
+        color: var(--color-text-secondary);
+    }
+    .report-card-meta .meta-item .glyphicon {
+        font-size: 11px;
+    }
+    .report-card-meta .badge {
+        font-size: 11px;
+        font-weight: 500;
+        background: var(--color-bg);
+        color: var(--color-text-secondary);
+        padding: 2px 8px;
+        border-radius: 99px;
+        border: 1px solid var(--color-border);
+    }
+    .report-card-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+        margin-left: 16px;
+    }
+
+    /* ========== Example Grid ========== */
+    .example-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 12px;
+    }
+    .example-card {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-left: 3px solid var(--color-primary);
+        transition: all 0.2s;
+    }
+    .example-card:hover {
+        box-shadow: var(--shadow-md);
+        border-left-color: var(--color-primary-hover);
+    }
+    .example-card-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-text);
+    }
+    .example-card-desc {
+        font-size: 12px;
+        color: var(--color-text-muted);
+        margin-top: 2px;
+    }
+    .example-card-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+        margin-left: 14px;
+    }
+
+    /* ========== Empty State ========== */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--color-text-muted);
+    }
+    .empty-state-icon {
+        font-size: 48px;
+        display: block;
+        margin-bottom: 16px;
+        color: #d1d5db;
+    }
+    .empty-state p {
+        margin: 4px 0;
+        font-size: 14px;
+    }
+    .no-results {
+        display: none;
+        text-align: center;
+        padding: 32px;
+        color: var(--color-text-muted);
+        font-size: 14px;
+        grid-column: 1 / -1;
+    }
+
+    /* ========== Footer ========== */
+    .footer {
+        text-align: center;
+        padding: 24px 0 0;
+        border-top: 1px solid var(--color-border);
+        margin-top: 16px;
+        font-size: 12px;
+        color: var(--color-text-muted);
+    }
+
+    /* ========== Responsive ========== */
+    @media (max-width: 1024px) {
+        .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .topnav { padding: 0 16px; gap: 12px; }
+        .topnav-search { max-width: none; }
+        .topnav-title { font-size: 15px; }
+        .main { padding: 20px 16px 40px; }
+        .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+        .report-grid { grid-template-columns: 1fr; }
+        .example-grid { grid-template-columns: 1fr; }
+    }
+</style>
+</head>
+<body>
+
+<!-- ============ Top Navigation ============ -->
+<nav class="topnav">
+    <a href="${contextPath}/ureport/" class="topnav-brand">
+        <div class="topnav-logo">U</div>
+        <span class="topnav-title">UReportPlus</span>
+        <span class="topnav-badge">管理中心</span>
+    </a>
+    <div class="topnav-search">
+        <span class="glyphicon glyphicon-search topnav-search-icon"></span>
+        <input type="text" id="searchInput" placeholder="搜索报表名称..." oninput="filterReports()">
+    </div>
+    <div class="topnav-actions">
+        <button class="btn btn-secondary" onclick="showExportDialog()" title="导出报表备份">
+            <span class="glyphicon glyphicon-export"></span> 导出
+        </button>
+        <button class="btn btn-secondary" onclick="showImportDialog()" title="导入报表备份">
+            <span class="glyphicon glyphicon-import"></span> 导入
+        </button>
+        <a href="${contextPath}/ureport/designer" class="btn btn-primary">
+            <span class="glyphicon glyphicon-plus"></span> 新建报表
+        </a>
+    </div>
+</nav>
+
+<!-- ============ Main Content ============ -->
+<div class="main">
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-card-icon blue"><span class="glyphicon glyphicon-file"></span></div>
+            <div class="stat-card-value">${totalReports}</div>
+            <div class="stat-card-label">我的报表</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon amber"><span class="glyphicon glyphicon-book"></span></div>
+            <div class="stat-card-value">${totalExamples}</div>
+            <div class="stat-card-label">内置示例</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon green"><span class="glyphicon glyphicon-hdd"></span></div>
+            <div class="stat-card-value">${providerCount}</div>
+            <div class="stat-card-label">存储源</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon indigo"><span class="glyphicon glyphicon-stats"></span></div>
+            <div class="stat-card-value">v$version</div>
+            <div class="stat-card-label">系统版本</div>
+        </div>
+    </div>
+
+    <!-- Reports Section -->
+    <div class="section" id="reportsSection">
+        <div class="section-header">
+            <div class="section-title">
+                <span class="dot"></span> 我的报表
+                <span class="section-count">共 <strong id="visibleCount">${totalReports}</strong> 个</span>
+            </div>
+        </div>
+
+        #if($totalReports == 0)
+        <div class="report-grid">
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <span class="glyphicon glyphicon-file empty-state-icon"></span>
+                <p style="font-weight:600;color:#374151;">还没有报表文件</p>
+                <p style="margin-top:4px;">点击右上角「新建报表」开始创建，或将 .ureportplus.xml 文件放入 ureportfiles 目录</p>
+            </div>
+        </div>
+        #else
+        <div class="report-grid" id="reportGrid">
+            #foreach($report in $reports)
+            <div class="report-card" data-name="$report.name.toLowerCase()" data-path="$report.path">
+                <div class="report-card-info">
+                    <div class="report-card-name">
+                        <span class="glyphicon glyphicon-list-alt" style="color:var(--color-primary);margin-right:8px;font-size:13px;"></span>$report.name
+                    </div>
+                    <div class="report-card-meta">
+                        <span class="meta-item"><span class="glyphicon glyphicon-time"></span> 创建 $report.createTime</span>
+                        <span class="meta-item"><span class="glyphicon glyphicon-refresh"></span> 更新 $report.updateTime</span>
+                        <span class="badge">$report.path</span>
+                    </div>
+                </div>
+                <div class="report-card-actions">
+                    <a href="${contextPath}/ureport/preview?_u=$report.file" class="btn btn-primary btn-sm" target="_blank">
+                        <span class="glyphicon glyphicon-eye-open"></span> 预览
+                    </a>
+                    <a href="${contextPath}/ureport/designer?_u=$report.file" class="btn btn-secondary btn-sm" target="_blank">
+                        <span class="glyphicon glyphicon-edit"></span> 编辑
+                    </a>
+                </div>
+            </div>
+            #end
+            <div class="no-results" id="noResults">
+                <span class="glyphicon glyphicon-search" style="font-size:32px;display:block;margin-bottom:8px;color:#d1d5db;"></span>
+                没有匹配的报表
+            </div>
+        </div>
+        #end
+    </div>
+
+    <!-- Examples Section -->
+    <div class="section" id="examplesSection">
+        <div class="section-header">
+            <div class="section-title">
+                <span class="dot" style="background:#f59e0b;"></span> 示例报表
+                <span class="section-count">共 <strong>${totalExamples}</strong> 个 · 内置参考模板</span>
+            </div>
+        </div>
+        <div class="example-grid">
+            #foreach($example in $examples)
+            <div class="example-card">
+                <div style="min-width:0;flex:1;">
+                    <div class="example-card-name">$example.name</div>
+                    <div class="example-card-desc">$example.desc</div>
+                </div>
+                <div class="example-card-actions">
+                    <a href="${contextPath}/ureport/preview?_u=$example.file" class="btn btn-primary btn-xs" target="_blank">预览</a>
+                    <a href="${contextPath}/ureport/designer?_u=$example.file" class="btn btn-secondary btn-xs" target="_blank">编辑</a>
+                </div>
+            </div>
+            #end
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        UReportPlus · 企业级报表引擎 · v$version
+    </div>
+
+</div>
+
+<!-- ===== Export Modal ===== -->
+<div id="exportModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.3);z-index:200;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)">
+        <h3 style="margin:0 0 16px;font-size:16px;font-weight:600">📦 导出报表备份</h3>
+        <div style="margin-bottom:12px">
+            <label style="cursor:pointer"><input type="checkbox" id="exportSelectAll" onchange="toggleSelectAll(this)" checked> 全选</label>
+        </div>
+        <div id="exportFileList" style="max-height:300px;overflow-y:auto;margin-bottom:16px;border:1px solid #e5e7eb;border-radius:8px;padding:8px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeExportDialog()" style="padding:8px 20px">取消</button>
+            <button class="btn btn-primary" onclick="doExport()" style="padding:8px 20px">导出选中报表</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Import Modal ===== -->
+<div id="importModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.3);z-index:200;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15)">
+        <h3 style="margin:0 0 16px;font-size:16px;font-weight:600">📥 导入报表备份</h3>
+        <div style="margin-bottom:12px">
+            <input type="file" id="importFileInput" accept=".ureportplus.bak" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px">
+        </div>
+        <div style="margin-bottom:16px">
+            <label style="font-weight:500;font-size:13px;margin-bottom:4px;display:block">同名报表处理方式：</label>
+            <select id="conflictStrategy" style="width:100%;padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px">
+                <option value="rename">保留原文件（导入文件重命名为 _copy）</option>
+                <option value="overwrite">覆盖原文件</option>
+            </select>
+        </div>
+        <div id="importResult" style="display:none;margin-bottom:12px;padding:10px;border-radius:8px;font-size:13px;line-height:1.6"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeImportDialog()" style="padding:8px 20px">取消</button>
+            <button class="btn btn-primary" onclick="doImport()" style="padding:8px 20px">开始导入</button>
+        </div>
+    </div>
+</div>
+
+<script>
+window._contextPath = "${contextPath}";
+#[[
+    // ===== Backup Export =====
+    let allReportFiles = [];
+
+    function showExportDialog() {
+        document.getElementById('exportModal').style.display = 'flex';
+        fetch(window._contextPath + '/ureport/backup/list')
+            .then(r => r.json())
+            .then(files => {
+                allReportFiles = files;
+                const list = document.getElementById('exportFileList');
+                list.innerHTML = files.map((f, i) =>
+                    `<div style="padding:6px 8px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px">
+                        <input type="checkbox" class="export-cb" value="${i}" checked>
+                        <span style="font-size:13px;flex:1">${f.name}</span>
+                        <span style="font-size:11px;color:#9ca3af">${f.prefix || ''}</span>
+                    </div>`
+                ).join('');
+                document.getElementById('exportSelectAll').checked = true;
+            });
+    }
+
+    function closeExportDialog() { document.getElementById('exportModal').style.display = 'none'; }
+    function toggleSelectAll(el) {
+        document.querySelectorAll('.export-cb').forEach(cb => cb.checked = el.checked);
+    }
+
+    function doExport() {
+        const selected = [];
+        document.querySelectorAll('.export-cb:checked').forEach(cb => {
+            const f = allReportFiles[parseInt(cb.value)];
+            if (f) selected.push(f.fullName || (f.prefix + f.name));
+        });
+        if (selected.length === 0) { alert('请选择要导出的报表'); return; }
+
+        fetch(window._contextPath + '/ureport/backup/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ names: selected })
+        }).then(r => r.blob()).then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ureportplus-backup.ureportplus.bak';
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            closeExportDialog();
+        });
+    }
+
+    // ===== Backup Import =====
+    function showImportDialog() {
+        document.getElementById('importModal').style.display = 'flex';
+        document.getElementById('importResult').style.display = 'none';
+        document.getElementById('importFileInput').value = '';
+    }
+
+    function closeImportDialog() { document.getElementById('importModal').style.display = 'none'; }
+
+    function doImport() {
+        const fileInput = document.getElementById('importFileInput');
+        const file = fileInput.files[0];
+        if (!file) { alert('请选择备份文件'); return; }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('conflictStrategy', document.getElementById('conflictStrategy').value);
+
+        const resultDiv = document.getElementById('importResult');
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = '#f9fafb';
+        resultDiv.textContent = '导入中…';
+
+        fetch(window._contextPath + '/ureport/backup/import', {
+            method: 'POST',
+            body: formData
+        }).then(r => r.json()).then(d => {
+            let html = '';
+            if (d.success) {
+                resultDiv.style.background = '#f0fdf4';
+                if (d.imported && d.imported.length) html += '✅ 已导入: ' + d.imported.join(', ') + '<br>';
+                if (d.renamed && d.renamed.length) html += '📝 已重命名: ' + d.renamed.join(', ') + '<br>';
+                if (d.skipped && d.skipped.length) html += '⚠️ 已跳过: ' + d.skipped.join(', ') + '<br>';
+                if (html === '') html = '✅ 导入完成';
+            } else {
+                resultDiv.style.background = '#fef2f2';
+                html = '❌ ' + (d.error || '导入失败');
+            }
+            resultDiv.innerHTML = html;
+            if (d.success) setTimeout(() => location.reload(), 1500);
+        }).catch(err => {
+            resultDiv.style.background = '#fef2f2';
+            resultDiv.innerHTML = '❌ 导入失败: ' + err.message;
+        });
+    }
+
+    // ===== Search =====
+    function filterReports() {
+        var query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+        var cards = document.querySelectorAll('#reportGrid .report-card');
+        var visible = 0;
+        cards.forEach(function(card) {
+            var name = card.getAttribute('data-name') || '';
+            var path = card.getAttribute('data-path') || '';
+            var match = query === '' || name.indexOf(query) !== -1 || path.indexOf(query) !== -1;
+            card.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        document.getElementById('visibleCount').textContent = visible;
+        var noResults = document.getElementById('noResults');
+        if (noResults) {
+            noResults.style.display = visible === 0 && query !== '' ? 'block' : 'none';
+        }
+    }
+]]#
+</script>
+
+</body>
+</html>

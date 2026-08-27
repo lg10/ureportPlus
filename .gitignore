@@ -1,0 +1,12 @@
+target/
+node_modules/
+*.class
+*.log
+*.jar
+!src/main/resources/**/*.jar
+.idea/
+*.iml
+.DS_Store
+output/
+
+ureportplus-*-maven-central.zip

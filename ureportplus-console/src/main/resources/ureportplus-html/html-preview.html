@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="${contextPath}/ureport/res/ureportplus-asserts/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${title}</title>
+<style type="text/css" id="_ureportplus_table_style">${style}</style>
+<style>
+    #set($pw = $paperWidth) #set($ph = $paperHeight)
+    #set($ml = $paperMarginLeft) #set($mr = $paperMarginRight)
+    #set($mt = $paperMarginTop) #set($mb = $paperMarginBottom)
+    #set($sheetMinHeight = "${ph}mm")
+    #set($pageSizeCss = "${pw}mm ${ph}mm")
+    #set($sheetLabel = "${pw}x${ph}mm ${paperOrientation}")
+    #if($receipt)
+    #set($sheetMinHeight = "0mm")
+    #set($pageSizeCss = "${pw}mm auto")
+    #set($sheetLabel = "小票模式")
+    #end
+
+    body { background-color:#e9ecef!important; margin:0!important; padding:0!important; }
+
+    /* 视口：屏幕31mm留白 */
+    .page-viewport { padding:30px 31mm; display:flex; justify-content:center; align-items:flex-start; box-sizing:border-box; }
+
+    /* 透明包裹 */
+    .report-wrapper { background:transparent!important; box-shadow:none!important; border:none!important; width:auto!important; min-height:auto!important; padding:0!important; margin:0!important; overflow:visible!important; }
+
+    /* 纸张 — 连续/单页共用；小票模式高度自适应，仅保证宽度一致 */
+    .report-page-sheet {
+        width:${pw}mm; min-height:${sheetMinHeight};
+        background:#fff; box-shadow:0 0 12px #ccc; border:1px solid #dee2e6;
+        padding:${mt}mm ${mr}mm ${mb}mm ${ml}mm;
+        box-sizing:border-box; overflow:hidden; position:relative;
+    }
+    .report-page-sheet::after { content:"${sheetLabel}"; position:absolute; bottom:4px; right:8px; font-size:8px; color:#ccc; pointer-events:none; }
+    .all-pages .report-page-sheet { margin-bottom:25px; }
+    .all-pages .report-page-sheet:last-child { margin-bottom:0; }
+
+    /* 表格 */
+    .report-page-sheet table { table-layout:fixed!important; border-collapse:collapse; margin:0 auto!important; box-sizing:border-box; }
+    .report-page-sheet th, .report-page-sheet td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; box-sizing:border-box; }
+    .report-page-sheet tr { page-break-inside:avoid; break-inside:avoid; }
+
+    /* 工具栏 — 固定在顶部 */
+    .report-toolbar {
+        width:100%; margin:0; padding:6px 16px; background:#fff;
+        box-shadow:0 1px 4px rgba(0,0,0,0.08); box-sizing:border-box;
+        display:flex; align-items:center; gap:4px; flex-wrap:wrap;
+        position:sticky; top:0; z-index:1000;
+    }
+    .report-toolbar .btn { display:inline-flex!important; padding:4px 8px!important; background:transparent!important; border:none!important; align-items:center; gap:2px; }
+    .report-toolbar .btn img { width:18px; height:18px; }
+    .report-toolbar .btn-group .btn { color:#337ab7; background:transparent!important; border:none!important; }
+    .report-toolbar .toolbar-divider { width:1px; height:20px; background:#ddd; margin:0 6px; }
+    .report-toolbar #pagingContainer { font-size:13px; margin-left:4px; color:#337ab7; }
+    .report-toolbar #pageSelector { display:inline-block; width:auto; font-size:13px; height:28px; margin:0 4px; }
+    .report-searchform { width:${pw}mm; margin:0 auto 10px auto; box-sizing:border-box; }
+    .report-hf { box-sizing:border-box; padding:2px 0; }
+
+    /* 窄屏适配 */
+    @media screen and (max-width: 900px) {
+        .page-viewport { padding:15px 5mm !important; }
+        .report-toolbar { padding:4px 8px !important; }
+    }
+    @media screen and (max-width: 600px) {
+        .page-viewport { padding:10px 5px !important; }
+        .report-toolbar { padding:4px 4px !important; font-size:12px; }
+    }
+
+    @media print {
+        @page { size:${pageSizeCss}; margin-top:${mt}mm; margin-bottom:${mb}mm; margin-left:${ml}mm; margin-right:${mr}mm; }
+        body { background:#fff!important; padding:0!important; margin:0!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .page-viewport { padding:0!important; }
+        .report-wrapper { width:100%!important; }
+        .report-page-sheet { width:auto!important; min-height:0!important; height:auto!important; box-shadow:none!important; border:none!important; padding:0!important; margin:0!important; overflow:visible!important; position:static!important; page-break-after:always!important; page-break-inside:avoid!important; break-after:always!important; break-inside:avoid!important; }
+        .report-page-sheet:last-child { page-break-after:auto!important; break-after:auto!important; }
+        .report-page-sheet::after { content:none!important; }
+        .report-toolbar,.report-searchform,.report-hf,iframe { display:none!important; }
+    }
+</style>
+<script src="${contextPath}/ureport/res/ureportplus-asserts/venderjs/jquery.min.js"></script>
+<script src="${contextPath}/ureport/res/ureportplus-asserts/venderjs/bootstrap.min.js"></script>
+<script src="${contextPath}/ureport/res/ureportplus-asserts/venderjs/Chart.bundle.min.js"></script>
+<script src="${contextPath}/ureport/res/ureportplus-asserts/venderjs/chartjs-plugin-datalabels.min.js"></script>
+<script src="${contextPath}/ureport/res/ureportplus-asserts/venderjs/bootstrap-datetimepicker.js"></script>
+<script src="${contextPath}/ureport/res/ureportplus-asserts/js/preview.bundle.js"></script>
+</head>
+<body>
+${upSearchFormHtml}
+
+<div class="report-toolbar">
+    <button type="button" class="btn btn-default ureportplus-print" title="在线打印"><img src="${contextPath}/ureport/res/ureportplus-asserts/icons/print.svg">打印</button>
+    <span class="toolbar-divider"></span>
+    <button type="button" class="btn btn-default ureportplus-export-pdf" title="导出PDF"><img src="${contextPath}/ureport/res/ureportplus-asserts/icons/pdf.svg">PDF</button>
+    <button type="button" class="btn btn-default ureportplus-export-word" title="导出WORD"><img src="${contextPath}/ureport/res/ureportplus-asserts/icons/word.svg">Word</button>
+    <button type="button" class="btn btn-default ureportplus-export-excel" title="导出EXCEL"><img src="${contextPath}/ureport/res/ureportplus-asserts/icons/excel.svg">Excel</button>
+    <span class="toolbar-divider"></span>
+    <div class="btn-group">
+        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" style="font-size:13px">
+            #if($pageIndex>0)单页选择#else连续#end <span class="caret"></span>
+        </button>
+        #if($customParameters && $customParameters != '')#set($cp = "&${customParameters}")#else#set($cp = "")#end
+        <ul class="dropdown-menu" role="menu">
+            <li><a href="${contextPath}/ureport/preview?_u=${file}${cp}" style="color:#337ab7">连续</a></li>
+            <li><a href="${contextPath}/ureport/preview?_u=${file}&_i=1${cp}" style="color:#337ab7">单页选择</a></li>
+        </ul>
+    </div>
+    #if($pageIndex>0)
+    <span id="pagingContainer">共<span id="totalPageLabel">${totalPageWithCol}</span>页
+        <select id="pageSelector" class="form-control">#foreach($index in [1..$totalPageWithCol])<option>${index}</option>#end</select>
+        <span id="pageLinkContainer"></span>
+    </span>
+    #else
+    <span style="font-size:13px;margin-left:4px;color:#337ab7">共<span id="totalPageLabel">${totalPageWithCol}</span>页</span>
+    #end
+</div>
+
+<div class="page-viewport">
+#if($pageIndex == 0)
+<div id="_ureportplus_table" class="report-wrapper all-pages">${content}</div>
+#else
+<div id="_ureportplus_table" class="report-wrapper">
+<div class="report-page-sheet">
+#if($headerHtml && $headerHtml != "")<div class="report-hf" style="margin:-${mt}mm 0 4px 0;padding:0">${headerHtml}</div>#end
+${content}
+#if($footerHtml && $footerHtml != "")<div class="report-hf" style="margin:4px 0 -${mb}mm 0;padding:0">${footerHtml}</div>#end
+</div>
+</div>
+#end
+</div>
+
+#if($showPageNumber && $pageIndex > 0)
+<div class="report-hf" style="text-align:${pageNumAlign};color:#666;font-size:10pt;">第${pageIndex}页，共${totalPageWithCol}页</div>
+#end
+${downSearchFormHtml}
+<iframe name="_print_frame" width="0" height="0" frameborder="0" src="about:blank"></iframe>
+<iframe name="_print_pdf_frame" width="0" height="0" frameborder="0" src="about:blank"></iframe>
+
+<script>
+window._server="${contextPath}/ureport"; window.formElements=[];
+$(document).ready(function(){
+    buildPaging(${pageIndex},${totalPageWithCol});
+    #if($intervalRefreshValue>0)_intervalRefresh($intervalRefreshValue,$totalPageWithCol);#end
+    _buildChartDatas($chartDatas);${searchFormJs}
+    function doSearch(){submitSearchForm("${file}","${customParameters}");}
+    autoScaleReport();
+});
+$(window).on('resize', autoScaleReport);
+
+function autoScaleReport() {
+    var viewport = document.querySelector('.page-viewport');
+    var wrapper = document.querySelector('.report-wrapper');
+    if (!viewport || !wrapper) return;
+
+    // 重置缩放，测量原始尺寸
+    wrapper.style.transform = '';
+    wrapper.style.marginBottom = '';
+
+    // wrapper 自然宽度（纸张宽度，pt→mm→px 换算后约为 794px for A4）
+    var naturalW = wrapper.scrollWidth;
+    if (!naturalW || naturalW <= 0) return;
+
+    // 视口内容区可用宽度（扣除 padding）
+    var viewportStyle = getComputedStyle(viewport);
+    var padLeft = parseFloat(viewportStyle.paddingLeft) || 0;
+    var padRight = parseFloat(viewportStyle.paddingRight) || 0;
+    var availableW = viewport.clientWidth - padLeft - padRight;
+    if (availableW <= 0) availableW = window.innerWidth - 20;
+
+    if (availableW >= naturalW) return; // 容器够宽，无需缩放
+
+    var scale = (availableW - 4) / naturalW; // 4px 安全余量
+    if (scale > 1) scale = 1;
+    if (scale < 0.15) scale = 0.15;
+
+    wrapper.style.transform = 'scale(' + scale + ')';
+    wrapper.style.transformOrigin = 'top center';
+
+    // 补偿 transform 缩放后多占的布局高度（transform 不改变布局盒模型）
+    var h = wrapper.offsetHeight;
+    wrapper.style.marginBottom = '-' + Math.round(h * (1 - scale)) + 'px';
+}
+</script>
+</body>
+</html>
