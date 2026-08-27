@@ -22,5 +22,5 @@ import java.io.Serializable;
  * @since 2017年1月16日
  */
 public enum PagingMode implements Serializable{
-	fitpage,fixrows
+	fitpage,fixrows,receipt
 }

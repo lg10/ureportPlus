@@ -2,7 +2,7 @@
  * Inline cell editor. Allows editing of all cell types.
  * Dataset/expression cells are synced back to the cell definition.
  */
-import {setDirty} from '../Utils.js';
+import {setDirty,undoManager} from '../Utils.js';
 
 const TYPE_NAMES = {
     expression: '表达式', dataset: '数据集', image: '图片',
@@ -35,13 +35,38 @@ export default class CellEditor {
                 const cellDef = cellsMap.get(key);
                 if (!cellDef) continue;
 
-                // For simple cells, directly update the value
-                if (cellDef.value.type === 'simple') {
+                if (!cellDef.value || !cellDef.value.type || cellDef.value.type === 'simple') {
+                    // Simple cell: sync display text back to the model
+                    if (!cellDef.value) cellDef.value = { type: 'simple' };
+                    cellDef.value.type = 'simple';
                     cellDef.value.value = newVal != null ? String(newVal) : '';
                     setDirty();
+                } else if (source === 'edit') {
+                    // Direct input replaces a non-simple value: convert the cell
+                    // to simple text so model and canvas never diverge (undoable)
+                    const oldValue = cellDef.value;
+                    const oldExpand = cellDef.expand;
+                    const newSimple = { type: 'simple', value: newVal != null ? String(newVal) : '' };
+                    cellDef.value = newSimple;
+                    cellDef.expand = 'None';
+                    undoManager.add({
+                        redo() {
+                            cellDef.value = { type: 'simple', value: newVal != null ? String(newVal) : '' };
+                            cellDef.expand = 'None';
+                            hot.setDataAtCell(row, col, newVal, 'panel');
+                            setDirty();
+                        },
+                        undo() {
+                            cellDef.value = oldValue;
+                            cellDef.expand = oldExpand;
+                            hot.setDataAtCell(row, col, oldVal, 'panel');
+                            setDirty();
+                        }
+                    });
+                    setDirty();
                 }
-                // For non-simple cells, also allow the edit to go through
-                // The property panel provides the proper UI; direct input is harmless
+                // Other sources (copy/paste, autofill) on non-simple cells:
+                // keep the typed value — the property panel owns complex types
             }
             hot.render();
         });

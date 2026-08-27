@@ -48,7 +48,11 @@ public class BackupServletAction extends RenderPageServletAction {
 	@Override
 	public void execute(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		String method = retriveMethod(req);
-		if (method != null) {
+		if ("export".equals(method)) {
+			exportBackup(req, resp);
+		} else if ("import".equals(method)) {
+			importBackup(req, resp);
+		} else if (method != null) {
 			invokeMethod(method, req, resp);
 		} else {
 			list(req, resp);

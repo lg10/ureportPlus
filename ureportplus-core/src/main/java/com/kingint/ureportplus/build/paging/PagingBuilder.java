@@ -35,6 +35,7 @@ public class PagingBuilder {
 	static{
 		paginationMap.put(PagingMode.fitpage, new FitPagePagination());
 		paginationMap.put(PagingMode.fixrows, new FixRowsPagination());
+		paginationMap.put(PagingMode.receipt, new ReceiptPagination());
 	}
 	public static List<Page> buildPages(Report report){
 		Paper paper = report.getPaper();

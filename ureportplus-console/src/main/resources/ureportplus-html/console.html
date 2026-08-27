@@ -578,6 +578,7 @@
 </div>
 
 <script>
+window._contextPath = "${contextPath}";
 #[[
     // ===== Backup Export =====
     let allReportFiles = [];
@@ -623,7 +624,7 @@
             a.href = url;
             a.download = 'ureportplus-backup.ureportplus.bak';
             a.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
             closeExportDialog();
         });
     }

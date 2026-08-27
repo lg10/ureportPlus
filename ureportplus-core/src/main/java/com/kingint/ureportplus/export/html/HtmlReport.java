@@ -42,6 +42,7 @@ public class HtmlReport {
 	private int paperMarginTop;
 	private int paperMarginBottom;
 	private String paperOrientation;
+	private boolean receipt;
 	private String headerHtml;
 	private String footerHtml;
 	private SearchFormData searchFormData;
@@ -143,6 +144,8 @@ public class HtmlReport {
 	public void setPaperMarginBottom(int paperMarginBottom) { this.paperMarginBottom = paperMarginBottom; }
 	public String getPaperOrientation() { return paperOrientation; }
 	public void setPaperOrientation(String paperOrientation) { this.paperOrientation = paperOrientation; }
+	public boolean isReceipt() { return receipt; }
+	public void setReceipt(boolean receipt) { this.receipt = receipt; }
 	public String getHeaderHtml() { return headerHtml; }
 	public void setHeaderHtml(String headerHtml) { this.headerHtml = headerHtml; }
 	public String getFooterHtml() { return footerHtml; }

@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.kingint.ureportplus</groupId>
 	<artifactId>ureportplus-all</artifactId>
-	<version>1.0.4</version>
+	<version>1.0.5</version>
 	<packaging>jar</packaging>
 
 	<name>UReportPlus All-in-One</name>
@@ -29,14 +29,14 @@
 	<scm>
 		<connection>scm:git:https://gitee.com/lg10/ureport-plus.git</connection>
 		<url>https://gitee.com/lg10/ureport-plus</url>
-		<tag>v1.0.0</tag>
+		<tag>v1.0.5</tag>
 	</scm>
 
 	<dependencies>
 		<dependency>
 			<groupId>com.kingint.ureportplus</groupId>
 			<artifactId>ureportplus-console</artifactId>
-			<version>1.0.4</version>
+			<version>1.0.5</version>
 		</dependency>
 	</dependencies>
 

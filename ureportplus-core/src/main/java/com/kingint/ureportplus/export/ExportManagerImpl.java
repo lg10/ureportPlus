@@ -111,6 +111,8 @@ public class ExportManagerImpl implements ExportManager {
 		htmlReport.setPaperMarginTop(Math.round(paper.getTopMargin() * 100f / 283f));
 		htmlReport.setPaperMarginBottom(Math.round(paper.getBottomMargin() * 100f / 283f));
 		htmlReport.setPaperOrientation(paper.getOrientation() != null ? paper.getOrientation().name() : "portrait");
+		// 小票模式：预览不分页，高度自适应，仅保证宽度一致
+		htmlReport.setReceipt(paper.getPagingMode() == com.kingint.ureportplus.definition.PagingMode.receipt);
 		htmlReport.setShowPageNumber(paper.isShowPageNumber());
 		htmlReport.setPageNumPos(paper.getPageNumPos() != null ? paper.getPageNumPos() : "footer");
 		htmlReport.setPageNumAlign(paper.getPageNumAlign() != null ? paper.getPageNumAlign() : "center");

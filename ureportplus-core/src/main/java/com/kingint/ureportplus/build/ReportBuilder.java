@@ -358,7 +358,57 @@ public class ReportBuilder extends BasePagination implements ApplicationContextA
 		List<Row> pageRepeatFooters=new ArrayList<Row>();
 		pageRepeatHeaders.addAll(headerRows);
 		pageRepeatFooters.addAll(footerRows);
-		if(pagingMode.equals(PagingMode.fitpage)){
+		if(pagingMode.equals(PagingMode.receipt)){
+			// 小票模式：不分页，全部行放入同一页，忽略纸张高度，仅保证宽度一致
+			for(int i=0;i<rowSize;i++){
+				Row row=rows.get(i);
+				int rowRealHeight=row.getRealHeight();
+				if(rowRealHeight==0){
+					continue;
+				}
+				Band band=row.getBand();
+				if(band!=null){
+					String rowKey=row.getRowKey();
+					int index=-1;
+					if(band.equals(Band.headerrepeat)){
+						for(int j=0;j<pageRepeatHeaders.size();j++){
+							Row headerRow=pageRepeatHeaders.get(j);
+							if(headerRow.getRowKey().equals(rowKey)){
+								index=j;
+								break;
+							}
+						}
+						if(index>-1){
+							pageRepeatHeaders.remove(index);
+							pageRepeatHeaders.add(index,row);
+						}
+					}else if(band.equals(Band.footerrepeat)){
+						for(int j=0;j<pageRepeatFooters.size();j++){
+							Row footerRow=pageRepeatFooters.get(j);
+							if(footerRow.getRowKey().equals(rowKey)){
+								index=j;
+								break;
+							}
+						}
+						if(index>-1){
+							pageRepeatFooters.remove(index);
+							pageRepeatFooters.add(index,row);
+						}
+					}
+					if(!Band.subtotal.equals(band)){
+						continue;
+					}
+				}
+				pageRows.add(row);
+				row.setPageIndex(pageIndex);
+			}
+			if(pageRows.size()>0){
+				Page newPage=buildPage(pageRows,pageRepeatHeaders,pageRepeatFooters,titleRows,pageIndex,report);
+				pages.add(newPage);
+			}
+			report.getContext().setTotalPages(pages.size());
+			buildPageHeaderFooter(pages, report);
+		}else if(pagingMode.equals(PagingMode.fitpage)){
 			int height=paper.getHeight()-paper.getBottomMargin()-paper.getTopMargin()-5;
 			if(paper.getOrientation().equals(Orientation.landscape)){
 				height=paper.getWidth()-paper.getBottomMargin()-paper.getTopMargin()-5;

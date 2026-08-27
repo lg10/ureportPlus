@@ -154,6 +154,7 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 			context.put("paperMarginTop", htmlReport.getPaperMarginTop());
 			context.put("paperMarginBottom", htmlReport.getPaperMarginBottom());
 			context.put("paperOrientation", htmlReport.getPaperOrientation());
+			context.put("receipt", htmlReport.isReceipt());
 			context.put("headerHtml", htmlReport.getHeaderHtml());
 			context.put("footerHtml", htmlReport.getFooterHtml());
 		}else{
@@ -166,6 +167,7 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 			context.put("showPageNumber", false);
 			context.put("pageNumPos", "footer");
 			context.put("pageNumAlign", "center");
+			context.put("receipt", false);
 			context.put("headerHtml", "");
 			context.put("footerHtml", "");
 		}
@@ -444,6 +446,8 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 		htmlReport.setPaperMarginTop(Math.round(paper.getTopMargin() * 100f / 283f));
 		htmlReport.setPaperMarginBottom(Math.round(paper.getBottomMargin() * 100f / 283f));
 		htmlReport.setPaperOrientation(paper.getOrientation() != null ? paper.getOrientation().name() : "portrait");
+		// 小票模式：预览不分页，高度自适应，仅保证宽度一致
+		htmlReport.setReceipt(paper.getPagingMode() == com.kingint.ureportplus.definition.PagingMode.receipt);
 		htmlReport.setShowPageNumber(paper.isShowPageNumber());
 		htmlReport.setPageNumPos(paper.getPageNumPos() != null ? paper.getPageNumPos() : "footer");
 		htmlReport.setPageNumAlign(paper.getPageNumAlign() != null ? paper.getPageNumAlign() : "center");

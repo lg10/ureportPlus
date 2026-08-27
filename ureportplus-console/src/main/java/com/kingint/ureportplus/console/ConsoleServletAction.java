@@ -100,6 +100,7 @@ public class ConsoleServletAction extends RenderPageServletAction {
             {"example09-conditional-format","条件逻辑 — if/else + 链接URL"},
             {"example10-cross-group",       "纵×横交叉分组 — 酒店(行)×房型(列)"},
             {"example11-group-detail",      "分层+合并 — 集团→酒店(合并)→房型明细→小计"},
+            {"example12-receipt-bill",      "小票结账单 — 小票模式不分页，消费/收款双列表分别合计"},
         };
         for (String[] def : exampleDefs) {
             Map<String, String> ex = new HashMap<String, String>();

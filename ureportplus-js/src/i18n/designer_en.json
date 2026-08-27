@@ -444,6 +444,8 @@
       "pagingType": "Paging Type:",
       "auto": "Auto",
       "fixRows": "Fix Rows",
+      "receipt": "Receipt",
+      "receiptTip": "Receipt mode: no paging in preview, all content is shown continuously on a single page, paper height is ignored, only width is kept consistent",
       "rowsPerPage": "Rows per Page：",
       "fixRowsTip": "Fixed rows cannot be less than one",
       "colDesc": "The column effect is shown in paging,and print,exporting report.",

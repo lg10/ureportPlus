@@ -13,6 +13,14 @@
     #set($pw = $paperWidth) #set($ph = $paperHeight)
     #set($ml = $paperMarginLeft) #set($mr = $paperMarginRight)
     #set($mt = $paperMarginTop) #set($mb = $paperMarginBottom)
+    #set($sheetMinHeight = "${ph}mm")
+    #set($pageSizeCss = "${pw}mm ${ph}mm")
+    #set($sheetLabel = "${pw}x${ph}mm ${paperOrientation}")
+    #if($receipt)
+    #set($sheetMinHeight = "0mm")
+    #set($pageSizeCss = "${pw}mm auto")
+    #set($sheetLabel = "小票模式")
+    #end
 
     body { background-color:#e9ecef!important; margin:0!important; padding:0!important; }
 
@@ -22,14 +30,14 @@
     /* 透明包裹 */
     .report-wrapper { background:transparent!important; box-shadow:none!important; border:none!important; width:auto!important; min-height:auto!important; padding:0!important; margin:0!important; overflow:visible!important; }
 
-    /* 纸张 — 连续/单页共用 */
+    /* 纸张 — 连续/单页共用；小票模式高度自适应，仅保证宽度一致 */
     .report-page-sheet {
-        width:${pw}mm; min-height:${ph}mm;
+        width:${pw}mm; min-height:${sheetMinHeight};
         background:#fff; box-shadow:0 0 12px #ccc; border:1px solid #dee2e6;
         padding:${mt}mm ${mr}mm ${mb}mm ${ml}mm;
         box-sizing:border-box; overflow:hidden; position:relative;
     }
-    .report-page-sheet::after { content:"${pw}x${ph}mm ${paperOrientation}"; position:absolute; bottom:4px; right:8px; font-size:8px; color:#ccc; pointer-events:none; }
+    .report-page-sheet::after { content:"${sheetLabel}"; position:absolute; bottom:4px; right:8px; font-size:8px; color:#ccc; pointer-events:none; }
     .all-pages .report-page-sheet { margin-bottom:25px; }
     .all-pages .report-page-sheet:last-child { margin-bottom:0; }
 
@@ -65,7 +73,7 @@
     }
 
     @media print {
-        @page { size:${pw}mm ${ph}mm; margin-top:${mt}mm; margin-bottom:${mb}mm; margin-left:${ml}mm; margin-right:${mr}mm; }
+        @page { size:${pageSizeCss}; margin-top:${mt}mm; margin-bottom:${mb}mm; margin-left:${ml}mm; margin-right:${mr}mm; }
         body { background:#fff!important; padding:0!important; margin:0!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
         .page-viewport { padding:0!important; }
         .report-wrapper { width:100%!important; }

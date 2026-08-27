@@ -90,6 +90,32 @@ export default class UReportPlusDesigner{
             // Also try jQuery on window as fallback
             $(window).on('keydown.save', handleSaveKey);
 
+            // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y — undo/redo (skip text inputs so
+            // native field-level undo keeps working there)
+            var handleUndoRedoKey = function(e) {
+                if (!(e.ctrlKey || e.metaKey)) return;
+                const tag = e.target && e.target.tagName;
+                if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+                if (e.keyCode === 90) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.shiftKey) {
+                        if (undoManager.hasRedo()) undoManager.redo();
+                    } else {
+                        if (undoManager.hasUndo()) undoManager.undo();
+                    }
+                    _this.context.hot.render();
+                    return false;
+                } else if (e.keyCode === 89) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (undoManager.hasRedo()) undoManager.redo();
+                    _this.context.hot.render();
+                    return false;
+                }
+            };
+            document.addEventListener('keydown', handleUndoRedoKey, true);
+
             // Track save status (no auto-save)
             $('<style>').text(
                 '.ud-save-status{font-size:11px;padding:3px 10px;border-radius:99px;margin-left:12px;font-weight:500;display:inline-flex;align-items:center}' +
@@ -104,8 +130,22 @@ export default class UReportPlusDesigner{
             $('.ud-toolbar .ud-save-status').css('margin-left', 'auto');
             _this.context.hot.addHook('afterChange', function(changes, source) {
                 if (source === 'loadData' || !changes) return;
+                // Panel-driven writes (SimpleEditor / type switch) already updated
+                // the model — refreshing here would rebuild the panel and steal focus
+                if (source === 'panel') return;
                 _this._dirty = true;
                 _this._saveStatusEl.text('● 未保存').removeClass('saved').addClass('unsaved');
+                // Lightweight sync: no panel rebuild scroll-to-top, no debouncing
+                if (changes && changes.length) {
+                    const sel = _this.context.hot.getSelected();
+                    if (sel) {
+                        const [ri, ci, r2, c2] = sel;
+                        _this.propertyPanel.refresh(ri, ci, r2, c2, { debounce: false, noScroll: true });
+                        for (let tool of _this.tools) {
+                            if (tool.refresh) tool.refresh(ri, ci, r2, c2);
+                        }
+                    }
+                }
             });
         });
     }

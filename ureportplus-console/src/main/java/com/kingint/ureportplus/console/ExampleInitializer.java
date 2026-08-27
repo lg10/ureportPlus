@@ -48,7 +48,7 @@ public class ExampleInitializer implements ApplicationListener<ContextRefreshedE
 				"example05-cross-tab", "example06-more-expressions",
 				"example07-url-params", "example08-page-functions",
 				"example09-conditional-format", "example10-cross-group",
-				"example11-group-detail"
+				"example11-group-detail", "example12-receipt-bill"
 			};
 
 			int count = 0;

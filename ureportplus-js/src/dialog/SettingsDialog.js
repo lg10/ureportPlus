@@ -425,6 +425,10 @@ export default class SettingsDialog{
             <input type="radio" name="pagingType" value="true"> ${window.i18n.dialog.setting.fixRows}
         </label>`);
         group.append(this.fixNum);
+        this.receipt=$(`<label class="checkbox-inline" style="padding-left: 5px" title="${window.i18n.dialog.setting.receiptTip}">
+            <input type="radio" name="pagingType" value="true"> ${window.i18n.dialog.setting.receipt}
+        </label>`);
+        group.append(this.receipt);
 
         const rowNumberGroup=$(`<span style="margin-left: 15px"><span>${window.i18n.dialog.setting.rowsPerPage}</span></span>`);
         group.append(rowNumberGroup);
@@ -448,6 +452,11 @@ export default class SettingsDialog{
         this.fixNum.children('input').click(function(){
             rowNumberGroup.show();
             _this.paper.pagingMode='fixrows';
+            setDirty();
+        });
+        this.receipt.children('input').click(function(){
+            rowNumberGroup.hide();
+            _this.paper.pagingMode='receipt';
             setDirty();
         });
 
@@ -635,6 +644,9 @@ export default class SettingsDialog{
         if(pagingMode==='fitpage'){
             this.fitPage.children('input').trigger('click');
             this.fitPage.children('input').prop('checked',true);
+        }else if(pagingMode==='receipt'){
+            this.receipt.children('input').trigger('click');
+            this.receipt.children('input').prop('checked',true);
         }else{
             this.fixNum.children('input').trigger('click');
             this.fixNum.children('input').prop('checked',true);
