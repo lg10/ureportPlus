@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/logo.png" alt="UReportPlus" width="200" onerror="this.style.display='none'"/>
+  <img src="docs/images/ureportPlusLogo.svg" alt="UReportPlus" width="200"/>
 </p>
 
 <h1 align="center">UReportPlus</h1>
