@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <link href="${contextPath}/ureport/res/ureportplus-asserts/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<link rel="icon" type="image/svg+xml" href="${contextPath}/ureport/res/ureportplus-asserts/images/ureportplus-logo.svg">
 <meta name="renderer" content="webkit">
 <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -64,14 +65,9 @@
     .topnav-logo {
         width: 36px;
         height: 36px;
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
         border-radius: var(--radius-sm);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-weight: 700;
-        font-size: 18px;
+        object-fit: contain;
+        flex-shrink: 0;
     }
     .topnav-title {
         font-size: 17px;
@@ -412,7 +408,7 @@
 <!-- ============ Top Navigation ============ -->
 <nav class="topnav">
     <a href="${contextPath}/ureport/" class="topnav-brand">
-        <div class="topnav-logo">U</div>
+        <img src="${contextPath}/ureport/res/ureportplus-asserts/images/ureportplus-logo.svg" class="topnav-logo" alt="UReportPlus">
         <span class="topnav-title">UReportPlus</span>
         <span class="topnav-badge">管理中心</span>
     </a>

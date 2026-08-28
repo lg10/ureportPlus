@@ -157,6 +157,9 @@ export default class ReportTable{
                 let key=row.rowNumber+","+col.columnNumber;
                 let cell=cellsMap[key];
                 if(cell){
+                    if(cell.value && cell.value.type==='zxing' && cell.value.data===undefined){
+                        cell.value.data=cell.value.value || '';
+                    }
                     this.cellsMap.set(key,cell);
                     rowData.push(cell.value.value || "");
                     let rowspan=cell.rowSpan,colspan=cell.colSpan;

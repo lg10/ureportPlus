@@ -72,8 +72,17 @@ run_mvn() {
 }
 
 # ---------- 读取当前版本 ----------
-CURRENT_VERSION=$(grep -m1 -oE '<version>[0-9]+\.[0-9]+\.[0-9]+</version>' "$SCRIPT_DIR/ureportplus-parent/pom.xml" | sed -E 's/<\/?version>//g')
+# 取 ureportplus-parent 自身坐标紧随的 <version>；不能取文件中第一个数字版本，
+# 否则会误取插件版本（如 central-publishing-maven-plugin）
+CURRENT_VERSION=$(grep -A1 '<artifactId>ureportplus-parent</artifactId>' "$SCRIPT_DIR/ureportplus-parent/pom.xml" 2>/dev/null \
+  | grep -m1 -oE '<version>[^<]+</version>' | sed -E 's/<\/?version>//g' || true)
+printf '%s' "${CURRENT_VERSION:-}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' \
+  || fail "parent pom 的项目版本 '${CURRENT_VERSION:-<空>}' 不是合法的 x.y.z 数字，pom 可能已损坏，请先用 git 恢复后重试"
 [ -n "$VERSION" ] || fail "缺少版本号参数。当前版本：${CURRENT_VERSION}。用法：./release.sh <新版本号> [--auto] [--no-upload] [--skip-build]"
+if [ "$VERSION" != "same" ]; then
+  printf '%s' "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' \
+    || fail "非法版本号：'$VERSION'（必须是 x.y.z 数字形式；--auto/--no-upload/--skip-build 是选项参数，不是版本号）"
+fi
 
 if [ "$VERSION" = "same" ]; then
   VERSION="$CURRENT_VERSION"

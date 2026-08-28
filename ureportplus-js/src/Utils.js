@@ -228,9 +228,13 @@ export function tableToXml(context){
                 if(value.format){
                     cellXml+=` format="${value.format}"`;
                 }
+                if(value.codeDisplay){
+                    cellXml+=` code-display="true"`;
+                }
                 cellXml+=`>`;
+                const zxingData=value.data!==undefined ? value.data : (value.value || '');
                 cellXml+=`<text>`;
-                cellXml+=`<![CDATA[${value.value}]]>`;
+                cellXml+=`<![CDATA[${zxingData}]]>`;
                 cellXml+=`</text>`;
                 cellXml+=`</zxing-value>`;
             }else if(value.type==='slash'){

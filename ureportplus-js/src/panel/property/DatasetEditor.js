@@ -69,7 +69,17 @@ export default class DatasetEditor {
         this.datasetSelect.on('change', function () {
             const dsName = $(this).val();
             self._populateFields(dsName);
-            if (!self.initialized) self._setDatasetName(dsName);
+            if (!self.initialized) {
+                self._setDatasetName(dsName);
+                const fieldNames = self._fieldsOf(dsName).map(f => f.name);
+                const curProp = self.cellDef && self.cellDef.value ? self.cellDef.value.property : '';
+                if (curProp && fieldNames.indexOf(curProp) < 0) {
+                    self.propertySelect.val('');
+                    self._setProperty('');
+                }
+                self.step2.toggle(!!dsName);
+                self._updateTableData();
+            }
         });
         row.append(this.datasetSelect);
         this.step1.append(row);
@@ -93,7 +103,10 @@ export default class DatasetEditor {
         this.aggregateSelect.on('change', function () {
             const agg = $(this).val();
             self._updateVisibility(agg);
-            if (!self.initialized) self._setAggregate(agg);
+            if (!self.initialized) {
+                self._setAggregate(agg);
+                self._updateTableData();
+            }
         });
         row.append(this.aggregateSelect);
 
@@ -116,7 +129,10 @@ export default class DatasetEditor {
         const row = $(`<div class="ud-prop-v4-field"><label>属性字段</label></div>`);
         this.propertySelect = $(`<select class="field-input"><option value="">选择属性</option></select>`);
         this.propertySelect.on('change', function () {
-            if (!self.initialized) self._setProperty($(this).val());
+            if (!self.initialized) {
+                self._setProperty($(this).val());
+                self._updateTableData();
+            }
         });
         row.append(this.propertySelect);
         this.step2.append(row);
@@ -269,31 +285,33 @@ export default class DatasetEditor {
         const v = cellDef.value || {};
         this.container.show();
 
-        // Rebuild dataset select from report datasources
-        this._rebuildDatasetSelect();
-        this.datasetSelect.val(v.datasetName || '');
+        try {
+            // Rebuild dataset select from report datasources
+            this._rebuildDatasetSelect();
+            this.datasetSelect.val(v.datasetName || '');
 
-        // Aggregate ('select' is the original default)
-        this.aggregateSelect.val(v.aggregate || 'select');
+            // Aggregate ('select' is the original default)
+            this.aggregateSelect.val(v.aggregate || 'select');
 
-        // Property binding: visible whenever a dataset is bound
-        this._populateFields(v.datasetName);
-        this.step2.toggle(!!v.datasetName);
-        this.propertySelect.val(v.property || '');
+            // Property binding: visible whenever a dataset is bound
+            this._populateFields(v.datasetName);
+            this.step2.toggle(!!v.datasetName);
+            this.propertySelect.val(v.property || '');
 
-        // Visibility per aggregate
-        this._updateVisibility(v.aggregate || 'select');
+            // Visibility per aggregate
+            this._updateVisibility(v.aggregate || 'select');
 
-        // Order
-        this.orderSelect.val(v.order || 'none');
+            // Order
+            this.orderSelect.val(v.order || 'none');
 
-        // Conditions list
-        this._renderConditions(v);
+            // Conditions list
+            this._renderConditions(v);
 
-        // Mapping state
-        this._renderMapping(v);
-
-        this.initialized = false;
+            // Mapping state
+            this._renderMapping(v);
+        } finally {
+            this.initialized = false;
+        }
     }
 
     hide() {
@@ -500,6 +518,21 @@ export default class DatasetEditor {
     }
 
     // ---- Multi-cell setters ----
+
+    _updateTableData() {
+        const hot = this.context.hot;
+        if (!hot) return;
+        for (let i = this.rowIndex; i <= this.row2Index; i++) {
+            for (let j = this.colIndex; j <= this.col2Index; j++) {
+                const cd = this.context.getCell(i, j);
+                if (!cd || !cd.value || cd.value.type !== 'dataset') continue;
+                const v = cd.value;
+                const data = v.datasetName + '.' + v.aggregate + '(' + (v.property || '') + ')';
+                hot.setDataAtCell(i, j, data, 'panel');
+            }
+        }
+        hot.render();
+    }
 
     _forEachDatasetCell(fn) {
         for (let i = this.rowIndex; i <= this.row2Index; i++) {
