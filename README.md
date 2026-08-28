@@ -16,7 +16,7 @@
 
 <p align="center">
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"/></a>
-  <a href="https://central.sonatype.com/"><img src="https://img.shields.io/badge/maven--central-v1.0.0-blue" alt="Maven Central"/></a>
+  <a href="https://central.sonatype.com/"><img src="https://img.shields.io/badge/maven--central-v1.0.6-blue" alt="Maven Central"/></a>
   <a href="#"><img src="https://img.shields.io/badge/java-1.7%2B-orange" alt="Java"/></a>
   <a href="https://gitee.com/lg10/ureport-plus"><img src="https://img.shields.io/badge/gitee-ureport--plus-red" alt="Gitee"/></a>
 </p>
@@ -26,9 +26,9 @@
 ## 📖 目录
 
 - [项目简介](#-项目简介)
+- [集成指南](#-集成指南)
 - [功能特性](#-功能特性)
 - [快速开始](#-快速开始)
-- [集成指南](#-集成指南)
 - [配置参考](#-配置参考)
 - [表达式语言](#-表达式语言)
 - [内置函数库](#-内置函数库)
@@ -64,6 +64,102 @@
 - 💰 财务报表：利润表、资产负债表、现金流量表
 - 📊 数据看板：交叉表、分组汇总、同比环比
 - 🧾 票据打印：发票、收据、凭证（PDF 精确排版）
+
+---
+
+## 🔧 集成指南
+
+### Maven 依赖
+
+```xml
+<!-- 推荐：控制台模块，Maven 自动管理传递依赖 -->
+<dependency>
+    <groupId>com.kingint.ureportplus</groupId>
+    <artifactId>ureportplus-console</artifactId>
+    <version>1.0.6</version>
+</dependency>
+```
+
+```xml
+<!-- 备选：Fat JAR（全部依赖打包在内，80MB） -->
+<dependency>
+    <groupId>com.kingint.ureportplus</groupId>
+    <artifactId>ureportplus-all</artifactId>
+    <version>1.0.6</version>
+</dependency>
+```
+
+> **选择建议**：生产环境用 `console` 精确控制依赖版本；快速原型用 `all` 避免冲突。
+
+### Gradle
+
+```groovy
+implementation 'com.kingint.ureportplus:ureportplus-console:1.0.6'
+```
+
+### Spring Boot 集成（推荐）
+
+```java
+package com.example;
+
+import com.kingint.ureportplus.console.UReportPlusServlet;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ImportResource;
+
+@SpringBootApplication
+@ImportResource("classpath:ureportplus-console-context.xml")
+public class ReportApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ReportApplication.class, args);
+    }
+
+    @Bean
+    public ServletRegistrationBean<UReportPlusServlet> ureportServlet() {
+        ServletRegistrationBean<UReportPlusServlet> reg =
+            new ServletRegistrationBean<>(new UReportPlusServlet(), "/ureport/*");
+        reg.setLoadOnStartup(1);
+        return reg;
+    }
+}
+```
+
+```properties
+# application.properties - 最小配置
+ureportplus.fileStoreDir=/opt/reports
+```
+
+### 传统 web.xml
+
+```xml
+<!-- 1. Servlet -->
+<servlet>
+    <servlet-name>ureportplusServlet</servlet-name>
+    <servlet-class>com.kingint.ureportplus.console.UReportPlusServlet</servlet-class>
+</servlet>
+<servlet-mapping>
+    <servlet-name>ureportplusServlet</servlet-name>
+    <url-pattern>/ureport/*</url-pattern>         <!-- 必须 /ureport/* -->
+</servlet-mapping>
+
+<!-- 2. Spring 上下文（如未使用 Spring） -->
+<listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+</listener>
+<context-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>classpath:ureportplus-console-context.xml</param-value>
+</context-param>
+```
+
+如项目已使用 Spring，改为在现有配置中导入：
+
+```xml
+<import resource="classpath:ureportplus-console-context.xml"/>
+```
 
 ---
 
@@ -150,102 +246,6 @@ mvn spring-boot:run
 浏览器打开 **http://localhost:8080/ureport/designer** 🎉
 
 > Demo 内置 H2 数据库酒店营收示例数据。控制台登录：`admin` / `admin`
-
----
-
-## 🔧 集成指南
-
-### Maven 依赖
-
-```xml
-<!-- 推荐：控制台模块，Maven 自动管理传递依赖 -->
-<dependency>
-    <groupId>com.kingint.ureportplus</groupId>
-    <artifactId>ureportplus-console</artifactId>
-    <version>1.0.0</version>
-</dependency>
-```
-
-```xml
-<!-- 备选：Fat JAR（全部依赖打包在内，80MB） -->
-<dependency>
-    <groupId>com.kingint.ureportplus</groupId>
-    <artifactId>ureportplus-all</artifactId>
-    <version>1.0.0</version>
-</dependency>
-```
-
-> **选择建议**：生产环境用 `console` 精确控制依赖版本；快速原型用 `all` 避免冲突。
-
-### Gradle
-
-```groovy
-implementation 'com.kingint.ureportplus:ureportplus-console:1.0.0'
-```
-
-### Spring Boot 集成（推荐）
-
-```java
-package com.example;
-
-import com.kingint.ureportplus.console.UReportPlusServlet;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ImportResource;
-
-@SpringBootApplication
-@ImportResource("classpath:ureportplus-console-context.xml")
-public class ReportApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(ReportApplication.class, args);
-    }
-
-    @Bean
-    public ServletRegistrationBean<UReportPlusServlet> ureportServlet() {
-        ServletRegistrationBean<UReportPlusServlet> reg =
-            new ServletRegistrationBean<>(new UReportPlusServlet(), "/ureport/*");
-        reg.setLoadOnStartup(1);
-        return reg;
-    }
-}
-```
-
-```properties
-# application.properties - 最小配置
-ureportplus.fileStoreDir=/opt/reports
-```
-
-### 传统 web.xml
-
-```xml
-<!-- 1. Servlet -->
-<servlet>
-    <servlet-name>ureportplusServlet</servlet-name>
-    <servlet-class>com.kingint.ureportplus.console.UReportPlusServlet</servlet-class>
-</servlet>
-<servlet-mapping>
-    <servlet-name>ureportplusServlet</servlet-name>
-    <url-pattern>/ureport/*</url-pattern>         <!-- 必须 /ureport/* -->
-</servlet-mapping>
-
-<!-- 2. Spring 上下文（如未使用 Spring） -->
-<listener>
-    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
-</listener>
-<context-param>
-    <param-name>contextConfigLocation</param-name>
-    <param-value>classpath:ureportplus-console-context.xml</param-value>
-</context-param>
-```
-
-如项目已使用 Spring，改为在现有配置中导入：
-
-```xml
-<import resource="classpath:ureportplus-console-context.xml"/>
-```
 
 ---
 
@@ -707,6 +707,39 @@ HTML / PDF / Excel / Word 输出
 ---
 
 ## 📋 版本历史
+
+### v1.0.6 (2026-08-27)
+
+- 🚀 Maven Central 正式发布：`release.sh` 一键完成构建、签名、合并上传与自动发布
+- 📦 修复并完善发布流程（GPG 签名、源码/文档 JAR、Central Portal 状态轮询）
+
+### v1.0.5 (2026-08-27)
+
+- 🎨 属性面板全新设计
+- 📤 导出功能增强
+- 🗄️ 数据源功能增强
+- ⚠️ 本版本未发布到 Maven Central，请直接使用 v1.0.6
+
+### v1.0.4 (2026-07-31)
+
+- 🐛 修复 H2 内置示例数据源未注册问题
+- 🐛 修复导出异常时 PDF 文件损坏
+- 🐛 修复 Excel 导出时合并单元格区域产生空单元格
+- 🐛 报表文件列表自动跳过目录
+
+### v1.0.3 (2026-07-30)
+
+- 🤖 AI 流式多智能体：实时阶段反馈，告别假进度条
+- 💬 多智能体会话记忆与历史、推理内容智能提取
+- 🎨 属性面板商业化 UI 改版、可拖拽 AI 悬浮球
+- ⌨️ Ctrl+S / Cmd+S 快捷保存 + 工具栏保存状态指示
+
+### v1.0.1 (2026-07-30)
+
+- 🐛 修复 AI 对话消息重复显示
+- 💬 AI 会话记忆与会话持久化
+- 🤖 AI 支持表格结构操作（插入/删除行列、合并、分片）
+- 📚 AI 学习内置示例报表模式
 
 ### v1.0.0 (2026-07-28)
 
