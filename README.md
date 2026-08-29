@@ -16,7 +16,7 @@
 
 <p align="center">
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"/></a>
-  <a href="https://central.sonatype.com/"><img src="https://img.shields.io/badge/maven--central-v1.0.6-blue" alt="Maven Central"/></a>
+  <a href="https://central.sonatype.com/artifact/com.kingint.ureportplus/ureportplus-console"><img src="https://img.shields.io/maven-central/v/com.kingint.ureportplus/ureportplus-console?label=Maven%20Central&logo=apache-maven" alt="Maven Central"/></a>
   <a href="#"><img src="https://img.shields.io/badge/java-1.7%2B-orange" alt="Java"/></a>
   <a href="https://gitee.com/lg10/ureport-plus"><img src="https://img.shields.io/badge/gitee-ureport--plus-red" alt="Gitee"/></a>
 </p>
@@ -26,17 +26,13 @@
 ## 📖 Table of Contents
 
 - [Introduction](#-introduction)
+- [Screenshots](#-screenshots)
 - [Integration](#-integration)
 - [Features](#-features)
 - [Quick Start](#-quick-start)
 - [Configuration](#-configuration)
-- [Expression Language](#-expression-language)
-- [Built-in Functions](#-built-in-functions)
-- [Report XML Format](#-report-xml-format)
-- [URL Reference](#-url-reference)
+- [Documentation](#-documentation)
 - [Extension Development (SPI)](#-extension-development-spi)
-- [Architecture](#-architecture)
-- [Tech Stack](#-tech-stack)
 - [Version History](#-version-history)
 - [FAQ](#-faq)
 
@@ -67,6 +63,20 @@
 
 ---
 
+## 📸 Screenshots
+
+| Report Console | Visual Designer |
+| :---: | :---: |
+| <img src="docs/images/screenshot-console.png" alt="Report console" width="460"/> | <img src="docs/images/screenshot-designer.png" alt="Visual designer" width="460"/> |
+
+<p align="center">
+  <img src="docs/images/screenshot-preview.png" alt="HTML preview of a designed report" width="640"/>
+  <br/>
+  <sub>HTML preview of a report designed in the browser</sub>
+</p>
+
+---
+
 ## 🔧 Integration
 
 ### Maven Dependency
@@ -76,7 +86,7 @@
 <dependency>
     <groupId>com.kingint.ureportplus</groupId>
     <artifactId>ureportplus-console</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
 </dependency>
 ```
 
@@ -85,19 +95,21 @@
 <dependency>
     <groupId>com.kingint.ureportplus</groupId>
     <artifactId>ureportplus-all</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
 </dependency>
 ```
 
-> **Which one?** Use `console` in production for precise dependency control; use `all` for quick prototypes to avoid dependency conflicts.
+> **Which one?** Use `console` in production for precise dependency control; use `all` for quick prototypes to avoid dependency conflicts. The latest version is always shown in the Maven Central badge above.
 
 ### Gradle
 
 ```groovy
-implementation 'com.kingint.ureportplus:ureportplus-console:1.0.6'
+implementation 'com.kingint.ureportplus:ureportplus-console:1.0.7'
 ```
 
 ### Spring Boot Integration (Recommended)
+
+Works with Spring Boot 2.x (javax.servlet based — see the [FAQ](#-faq) for Spring Boot 3.x).
 
 ```java
 package com.example;
@@ -224,28 +236,30 @@ If your project already uses Spring, import it into your existing configuration 
 
 ### Prerequisites
 
-- JDK 1.7+
+- JDK 1.7+ (JDK 8 recommended)
 - Maven 3.0+
+- A modern browser (Chrome / Firefox / Edge)
 
-### Up and Running in One Minute
+### Option A: Add to your application (fastest)
+
+1. Create a Spring Boot 2.x application and add the Maven dependency shown in [Integration](#-integration).
+2. Register the servlet with the configuration class above (~10 lines of code).
+3. Start your application and open **http://localhost:8080/ureport/designer** 🎉
+
+### Option B: Build from source
 
 ```bash
 # 1. Clone the project
 git clone https://gitee.com/lg10/ureport-plus.git
 cd ureport-plus
 
-# 2. Build and install to your local repository
-cd ureportplus-parent
-mvn clean install -DskipTests
-
-# 3. Start the demo application
-cd ../../test-app
-mvn spring-boot:run
+# 2. Build all modules into your local repository
+for m in ureportplus-parent ureportplus-core ureportplus-font ureportplus-console ureportplus-all; do
+  mvn -f "$m/pom.xml" clean install -DskipTests
+done
 ```
 
-Open **http://localhost:8080/ureport/designer** in your browser 🎉
-
-> The demo ships with an H2 database containing hotel revenue sample data. Console login: `admin` / `admin`
+Then integrate the built `ureportplus-console` artifact into your application as in Option A.
 
 ---
 
@@ -283,271 +297,16 @@ Open **http://localhost:8080/ureport/designer** in your browser 🎉
 
 ---
 
-## 🧮 Expression Language
+## 📚 Documentation
 
-UReportPlus uses a custom ANTLR4-based expression engine. Its syntax follows mainstream programming language conventions, so the learning curve is minimal.
+In-depth references live in [`docs/`](docs/):
 
-### Data Types
-
-| Type | Examples | Description |
-| :--- | :--- | :--- |
-| Number | `1`, `3.14`, `-20` | Integer or decimal |
-| String | `'hello'`, `"world"` | Single or double quotes |
-| Boolean | `true`, `false` | — |
-
-### Operators
-
-| Operator | Example | Result |
-| :--- | :--- | :--- |
-| `+` | `21 + 31` | `52` |
-| `+` | `"Value:" + 331` | `"Value:331"` |
-| `-` | `21 - 31` | `-10` |
-| `*` | `3 * 6` | `18` |
-| `/` | `6 / 3` | `2` |
-| `%` | `5 % 3` | `2` |
-
-### Cell References
-
-Cell references in expressions are evaluated **relative to the current cell** — a key feature of Chinese-style report engines.
-
-| Syntax | Meaning | Example |
-| :--- | :--- | :--- |
-| `A1` | Relative reference: resolved along the parent-child tree | `A1 * 0.13` |
-| `&A1` | Absolute reference: always points to A1 | `&A1` |
-| `$A1` | Row-relative, column-absolute | `$A1 + B1` |
-
-```javascript
-// Real scenario: compute tax for each detail row
-B1 * 0.13                          // B1 is the amount, 13% tax rate
-
-// Real scenario: aggregate child cells
-sum(C1)                            // Sum over all child cells C1
-```
-
-### Conditionals
-
-#### Ternary Expression
-
-```
-condition ? trueValue : falseValue
-```
-
-```javascript
-A1 > 1000 ? "Normal" : "Low"
-A1 > 1000 && A1 < 20000 ? "Moderate" : "Adjusted:" + (A1 + 100)
-```
-
-#### If / Else If / Else
-
-```javascript
-if (A1 > 1000) {
-    return "High"
-} else if (A1 > 500) {
-    return "Medium"
-} else {
-    return "Low"
-}
-```
-
-#### Case Expression
-
-```javascript
-case {
-    A1 == 100  return "Exact match",
-    A1 > 100 && A1 < 1000  return "Normal range",
-    A1 >= 1000  return "Out of range"
-}
-```
-
-### Variables and Return
-
-```javascript
-// Define variables
-var total = ds.sum(revenue);
-var tax = total * 0.13;
-
-// Return the final value
-return total - tax;
-```
-
----
-
-## 📚 Built-in Functions
-
-### Dataset Aggregation
-
-Statistical calculations over SQL query result sets.
-
-| Function | Syntax | Description |
-| :--- | :--- | :--- |
-| `sum` | `ds.sum(field)` | Sum |
-| `avg` | `ds.avg(field)` | Average |
-| `count` | `ds.count(field)` | Count |
-| `max` | `ds.max(field)` | Maximum |
-| `min` | `ds.min(field)` | Minimum |
-| `list` | `ds.list(field)` | Comma-separated list |
-| `order` | `ds.order(field)` | Ordered list |
-
-### Math Functions
-
-`abs(n)` · `ceil(n)` · `floor(n)` · `round(n, precision)` · `pow(n, exp)` · `sqrt(n)` · `exp(n)` · `log(n)` · `log10(n)` · `sin(n)` · `cos(n)` · `tan(n)` · `random()` · `median(field)` · `mode(field)` · `stdevp(field)` · `vara(field)`
-
-### String Functions
-
-`length(s)` · `lower(s)` · `upper(s)` · `trim(s)` · `substring(s, begin, end)` · `replace(s, old, new)` · `indexOf(s, sub)`
-
-### Date Functions
-
-`date(year, month, day)` · `day(date)` · `month(date)` · `year(date)` · `week(date)` · `formatDate(date, pattern)`
-
-### Pagination Functions (for printing)
-
-| Function | Description |
+| Topic | Document |
 | :--- | :--- |
-| `page()` | Current page number |
-| `pages()` | Total pages |
-| `pageSum(field)` | Sum on current page |
-| `pageAvg(field)` | Average on current page |
-| `pageMax(field)` / `pageMin(field)` | Max/min on current page |
-| `pageCount(field)` | Count on current page |
-| `pageRows()` | Row count on current page |
-
-### Utility Functions
-
-| Function | Description | Example |
-| :--- | :--- | :--- |
-| `row()` | Current row number (1-based) | `row()` |
-| `column()` | Current column number (1-based) | `column()` |
-| `param(name)` | Get a URL query parameter | `param("hotelId")` |
-| `param(name, default)` | Parameter with default value | `param("year", "2025")` |
-| `json(path)` | Parse JSON data | `json("data.items[0].name")` |
-| `formatNumber(n, pattern)` | Number formatting | `formatNumber(12345.6, "#,##0.00")` → `12,345.60` |
-| `get(cell, index)` | Get the Nth value of a cell | `get(C1, 0)` |
-
-### Chinese Formal Numeral Conversion
-
-Converts amounts into formal Chinese numerals (used on invoices and checks):
-
-```javascript
-chn(12345.67)       // → "壹万贰仟叁佰肆拾伍元陆角柒分"
-chnMoney(12345.67)  // → "壹万贰仟叁佰肆拾伍元陆角柒分"
-```
-
----
-
-## 📄 Report XML Format
-
-Report definition files use the `.ureportplus.xml` extension. A complete example:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<ureportplus xmlns="http://www.example.org/ureportplus"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-
-    <!-- ===== Data source: JDBC connection ===== -->
-    <datasource name="demo" type="jdbc"
-        driver="org.h2.Driver"
-        url="jdbc:h2:mem:ureportplus_demo"
-        username="sa" password=""/>
-
-    <!-- ===== Dataset: SQL query ===== -->
-    <dataset name="ds" type="sql" datasource="demo">
-        <sql><![CDATA[
-            SELECT hotel_name, room_type, revenue
-            FROM hotel_revenue
-            ORDER BY hotel_name
-        ]]></sql>
-    </dataset>
-
-    <!-- ===== Row definitions ===== -->
-    <row row-number="1" height="30"/>      <!-- Header row -->
-    <row row-number="2" height="25"/>      <!-- Data row -->
-
-    <!-- ===== Column definitions ===== -->
-    <column col-number="1" width="120"/>   <!-- Hotel name column -->
-    <column col-number="2" width="100"/>   <!-- Revenue column -->
-
-    <!-- ===== Cell A1: static header ===== -->
-    <cell row="1" col="1">
-        <value>酒店名称</value>
-        <cell-style font-size="14" bold="true"
-            align="center" bgcolor="#f0f0f0"/>
-    </cell>
-
-    <!-- ===== Cell A2: bound to a dataset field ===== -->
-    <cell row="2" col="1">
-        <dataset-value ds-name="ds" property="hotel_name"/>
-    </cell>
-
-    <!-- ===== Cell B1: static header ===== -->
-    <cell row="1" col="2">
-        <value>营收金额</value>
-        <cell-style font-size="14" bold="true"
-            align="center" bgcolor="#f0f0f0"/>
-    </cell>
-
-    <!-- ===== Cell B2: expression ===== -->
-    <cell row="2" col="2">
-        <expression>ds.sum(revenue)</expression>
-    </cell>
-
-    <!-- ===== Paper settings ===== -->
-    <paper type="A4" orientation="portrait"
-        top-margin="20" bottom-margin="20"
-        left-margin="20" right-margin="20"/>
-
-</ureportplus>
-```
-
-### Cell Attributes Reference
-
-| Attribute | Values | Description |
-| :--- | :--- | :--- |
-| `type` | `text` / `expression` / `dataset` | Cell type |
-| `expand` | `none` / `down` / `right` | Expansion direction |
-| `left-parent-cell` | cell name | Left parent cell |
-| `top-parent-cell` | cell name | Top parent cell |
-| `link-url` | URL expression | Hyperlink |
-| `condition` | condition expression | Conditional style / conditional value |
-| `format` | format pattern | e.g. `#,##0.00` |
-
----
-
-## 🌐 URL Reference
-
-All endpoints are prefixed with `/ureport` (the fixed Servlet mapping).
-
-### Design & Preview
-
-| URL | Description |
-| :--- | :--- |
-| `/ureport/` | Report management center (report list + example cards) |
-| `/ureport/designer` | Visual designer (new blank report) |
-| `/ureport/designer?_u=file:report.ureportplus.xml` | Open an existing report for editing |
-| `/ureport/preview?_u=file:report.ureportplus.xml` | HTML online preview |
-| `/ureport/searchForm` | Query form designer |
-
-### Export
-
-| URL | Description |
-| :--- | :--- |
-| `/ureport/pdf?_u=file:report.ureportplus.xml` | Export PDF |
-| `/ureport/excel?_u=file:report.ureportplus.xml` | Export Excel (.xlsx) |
-| `/ureport/excel97?_u=file:report.ureportplus.xml` | Export Excel 97 (.xls) |
-| `/ureport/word?_u=file:report.ureportplus.xml` | Export Word (.docx) |
-
-### Others
-
-| URL | Description |
-| :--- | :--- |
-| `/ureport/datasource` | Data source management API |
-| `/ureport/chart` | Chart rendering API |
-| `/ureport/image` | Image resource loading |
-| `/ureport/import` | Import Excel templates |
-| `/ureport/version` | Version info (JSON) |
-| `/ureport/ai/*` | AI assistant API |
-
-> `_u` parameter format: `file:reportname.ureportplus.xml` (file system) or `classpath:reportname.ureportplus.xml` (classpath)
+| 🧮 Expression language: syntax, cell references, conditionals and 40+ built-in functions | [EXPRESSION-LANGUAGE.md](docs/EXPRESSION-LANGUAGE.md) |
+| 📄 Report XML format: full annotated `.ureportplus.xml` example + cell attributes | [REPORT-XML.md](docs/REPORT-XML.md) |
+| 🌐 URL reference: designer, preview, export and API endpoints | [URL-REFERENCE.md](docs/URL-REFERENCE.md) |
+| 🏗 Architecture & tech stack: module layout, report lifecycle, dependencies | [ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
 ---
 
@@ -611,156 +370,9 @@ public interface ReportAuthCheck {
 
 ---
 
-## 🏗 Architecture
-
-```
-┌────────────────────────────────────────────────────────────────────┐
-│                         BROWSER                                    │
-│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────┐  │
-│  │  Designer    │  │  Preview     │  │  Console (Manager)      │  │
-│  │ Handsontable │  │ HTML Render  │  │ Report list · Edit      │  │
-│  │ CodeMirror   │  │ Chart.js     │  │ Examples · Live search  │  │
-│  │ Bootstrap 3  │  │ ZXing        │  │ Stats panel · Version   │  │
-│  └──────┬───────┘  └──────┬───────┘  └───────────┬────────────┘  │
-└─────────┼──────────────────┼──────────────────────┼───────────────┘
-          │ HTTP / JSON       │                      │
-┌─────────▼───────────────────▼──────────────────────▼───────────────┐
-│                    UReportPlusServlet                              │
-│                 (single entry /ureport/*)                          │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐  │
-│  │Designer  │ │ Preview  │ │  Export  │ │DataSource│ │  Auth  │  │
-│  │Action    │ │ Action   │ │  Action  │ │ Action   │ │ Action │  │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬───┘  │
-└───────┼─────────────┼────────────┼────────────┼────────────┼──────┘
-        │             │            │            │            │
-┌───────▼─────────────▼────────────▼────────────▼────────────▼──────┐
-│                       CORE ENGINE                                 │
-│                                                                   │
-│  ┌──────────────┐   ┌──────────────────┐   ┌──────────────────┐  │
-│  │ ReportParser │──▶│  ReportBuilder   │──▶│  ExportManager   │  │
-│  │  (dom4j)     │   │  (Cell Expand)   │   │  (Producer SPI)  │  │
-│  └──────────────┘   └────────┬─────────┘   └────────┬─────────┘  │
-│                              │                       │            │
-│              ┌───────────────▼───────────────┐       │            │
-│              │     Expression Engine         │       │            │
-│              │  ANTLR4 → AST → Eval          │       │            │
-│              │  Functions · Operators · Vars │       │            │
-│              └───────────────────────────────┘       │            │
-│                                                      │            │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐            │            │
-│  │  Cache   │ │  Chart   │ │  Image   │            │            │
-│  │  Utils   │ │  Plugin  │ │ Provider │            │            │
-│  └──────────┘ └──────────┘ └──────────┘            │            │
-│                                                     │            │
-└─────────────────────────────────────────────────────┼────────────┘
-                                                      │
-                              ┌───────────────────────▼────────────┐
-                              │        EXPORT FORMATS              │
-                              │  HTML · PDF · Excel · Word         │
-                              │  (iText 5) (POI 3) (POI XWPF)     │
-                              └────────────────────────────────────┘
-```
-
-### Report Lifecycle
-
-```
-XML definition file (.ureportplus.xml)
-    │
-    ▼ dom4j parsing
-ReportDefinition (static definition model)
-    │
-    ▼ ReportBuilder.buildReport()
-Report (runtime model: Cell / Row / Column tree)
-    │
-    ▼ Parent-cell expansion + expression evaluation
-Cell tree (each cell holds its computed value)
-    │
-    ▼ ExportManager.dispatch()
-HTML / PDF / Excel / Word output
-```
-
----
-
-## 🛠 Tech Stack
-
-### Backend
-
-| Dependency | Version | Purpose |
-| :--- | :--- | :--- |
-| ANTLR4 Runtime | 4.9.3 | Expression parsing |
-| dom4j | 1.6.1 | XML parsing |
-| Spring Framework | 4.3.11 | DI / JDBC / Web |
-| iText | 5.5.13 | PDF export |
-| Apache POI | 3.16 | Excel + Word export |
-| ZXing | 3.3.1 | Barcodes / QR codes |
-| Velocity | 1.7 | HTML template rendering |
-| Jackson | 1.9.11 | JSON processing |
-
-### Frontend
-
-| Library | Version | Purpose |
-| :--- | :--- | :--- |
-| Handsontable | 7.4.2 | Spreadsheet editor |
-| CodeMirror | 5.58.2 | Expression code editor |
-| Chart.js | 2.9.4 | Chart rendering |
-| Bootstrap | 3.3.7 | UI framework |
-| jQuery | 1.12 | DOM manipulation |
-
----
-
 ## 📋 Version History
 
-### v1.0.6 (2026-08-27)
-
-- 🚀 Official Maven Central release: `release.sh` completes build, signing, bundle upload and auto-publish in one command
-- 📦 Polished release pipeline (GPG signing, sources/javadoc JARs, Central Portal status polling)
-
-### v1.0.5 (2026-08-27)
-
-- 🎨 Property panel redesigned
-- 📤 Export enhancements
-- 🗄️ Data source enhancements
-- ⚠️ Never published to Maven Central — use v1.0.6 instead
-
-### v1.0.4 (2026-07-31)
-
-- 🐛 Fixed H2 built-in demo data source not being registered
-- 🐛 Fixed PDF corruption when export fails
-- 🐛 Fixed empty cells produced in merged regions during Excel export
-- 🐛 Report file listing now skips directories
-
-### v1.0.3 (2026-07-30)
-
-- 🤖 Streaming multi-agent AI: real-time stage feedback, no more fake progress bars
-- 💬 Multi-agent conversation memory and history, smart extraction of reasoning content
-- 🎨 Commercial-grade property panel UI overhaul, draggable AI floating ball
-- ⌨️ Ctrl+S / Cmd+S save shortcut + save status indicator in toolbar
-
-### v1.0.1 (2026-07-30)
-
-- 🐛 Fixed duplicated AI chat messages
-- 💬 AI conversation memory with session persistence
-- 🤖 AI can manipulate table structure (insert/delete rows & columns, merge, bands)
-- 📚 AI learns from built-in example report patterns
-
-### v1.0.0 (2026-07-28)
-
-- 🎉 Full rebrand from UReport2 → UReportPlus
-- 🎨 Brand-new console UI: modern SaaS style + frosted-glass navbar
-- 📊 Console stats panel: report count, examples, storage providers, version
-- 🔍 Real-time search filtering by report name
-- 🕐 Report created / updated timestamps
-- 🚀 Maven Central publishing support
-- 📖 Full bilingual README documentation
-
-<details>
-<summary>UReport2 legacy versions</summary>
-
-- v2.7.2 — Example reports bundled into the JAR, auto-copied on startup
-- v2.7.1 — UI polish, inline editing, group subtotals/grand totals, AI multi-agent assistant, console login, 11 example reports
-- v2.6.4 — Core feature set: designer, export, expression engine, charts
-
-</details>
+Latest release: **v1.0.7** (2026-08-29) — full release notes in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
 ---
 
@@ -816,10 +428,14 @@ Yes. Data source passwords are injected via Spring property placeholders, so you
 
 | Document | Link |
 | :--- | :--- |
-| Report Storage & Data Source Configuration | [STORAGE-DATASOURCE.md](docs/STORAGE-DATASOURCE.md) |
-| Report Calculation Model in Depth | [REPORT-MODEL.md](docs/REPORT-MODEL.md) |
-| Expression Language Reference | [EXPRESSION.md](docs/EXPRESSION.md) |
-| Changelog | [CHANGELOG.md](CHANGELOG.md) |
+| Version History | [VERSION_HISTORY.md](VERSION_HISTORY.md) |
+| Expression Language & Built-in Functions | [docs/EXPRESSION-LANGUAGE.md](docs/EXPRESSION-LANGUAGE.md) |
+| Report XML Format | [docs/REPORT-XML.md](docs/REPORT-XML.md) |
+| URL Reference | [docs/URL-REFERENCE.md](docs/URL-REFERENCE.md) |
+| Architecture & Tech Stack | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Report Storage & Data Source Configuration | [docs/STORAGE-DATASOURCE.md](docs/STORAGE-DATASOURCE.md) |
+| Report Calculation Model in Depth | [docs/REPORT-MODEL.md](docs/REPORT-MODEL.md) |
+| UReport2 2.x Changelog (legacy, 2017) | [CHANGELOG.md](CHANGELOG.md) |
 | Issue Template | [ISSUE_TEMPLATE.md](ISSUE_TEMPLATE.md) |
 
 ---

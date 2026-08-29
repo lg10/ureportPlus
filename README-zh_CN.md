@@ -16,7 +16,7 @@
 
 <p align="center">
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"/></a>
-  <a href="https://central.sonatype.com/"><img src="https://img.shields.io/badge/maven--central-v1.0.6-blue" alt="Maven Central"/></a>
+  <a href="https://central.sonatype.com/artifact/com.kingint.ureportplus/ureportplus-console"><img src="https://img.shields.io/maven-central/v/com.kingint.ureportplus/ureportplus-console?label=Maven%20Central&logo=apache-maven" alt="Maven Central"/></a>
   <a href="#"><img src="https://img.shields.io/badge/java-1.7%2B-orange" alt="Java"/></a>
   <a href="https://gitee.com/lg10/ureport-plus"><img src="https://img.shields.io/badge/gitee-ureport--plus-red" alt="Gitee"/></a>
 </p>
@@ -26,17 +26,13 @@
 ## 📖 目录
 
 - [项目简介](#-项目简介)
+- [界面预览](#-界面预览)
 - [集成指南](#-集成指南)
 - [功能特性](#-功能特性)
 - [快速开始](#-快速开始)
 - [配置参考](#-配置参考)
-- [表达式语言](#-表达式语言)
-- [内置函数库](#-内置函数库)
-- [报表 XML 格式](#-报表-xml-格式)
-- [URL 接口参考](#-url-接口参考)
+- [深入文档](#-深入文档)
 - [扩展开发 SPI](#-扩展开发-spi)
-- [系统架构](#-系统架构)
-- [技术栈](#-技术栈)
 - [版本历史](#-版本历史)
 - [常见问题](#-常见问题)
 
@@ -68,6 +64,20 @@
 
 ---
 
+## 📸 界面预览
+
+| 报表管理中心 | 可视化设计器 |
+| :---: | :---: |
+| <img src="docs/images/screenshot-console.png" alt="报表管理中心" width="460"/> | <img src="docs/images/screenshot-designer.png" alt="可视化设计器" width="460"/> |
+
+<p align="center">
+  <img src="docs/images/screenshot-preview.png" alt="报表 HTML 在线预览" width="640"/>
+  <br/>
+  <sub>在浏览器中设计的报表，HTML 在线预览效果</sub>
+</p>
+
+---
+
 ## 🔧 集成指南
 
 ### Maven 依赖
@@ -77,7 +87,7 @@
 <dependency>
     <groupId>com.kingint.ureportplus</groupId>
     <artifactId>ureportplus-console</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
 </dependency>
 ```
 
@@ -86,7 +96,7 @@
 <dependency>
     <groupId>com.kingint.ureportplus</groupId>
     <artifactId>ureportplus-all</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
 </dependency>
 ```
 
@@ -95,13 +105,17 @@
 | `ureportplus-console` | **生产环境推荐**。精确控制依赖版本，避免冲突 |
 | `ureportplus-all` | 快速原型 / 依赖冲突难以解决时使用 |
 
+> 最新版本号以顶部 Maven Central 徽章为准（实时同步中央仓库）。
+
 ### Gradle 依赖
 
 ```groovy
-implementation 'com.kingint.ureportplus:ureportplus-console:1.0.6'
+implementation 'com.kingint.ureportplus:ureportplus-console:1.0.7'
 ```
 
 ### Spring Boot 集成（推荐）
+
+适用于 Spring Boot 2.x（基于 javax.servlet，Spring Boot 3.x 兼容性见[常见问题](#-常见问题)）。
 
 ```java
 package com.example;
@@ -255,38 +269,30 @@ chnMoney(ds.sum(revenue))
 
 ### 环境要求
 
-- JDK 1.7 及以上
+- JDK 1.7 及以上（推荐 JDK 8）
 - Maven 3.0 及以上
 - 现代浏览器（Chrome / Firefox / Edge）
 
-### 1. 克隆项目
+### 方式一：集成到你的应用（最快）
+
+1. 创建一个 Spring Boot 2.x 应用，按[集成指南](#-集成指南)添加 Maven 依赖；
+2. 使用上面的配置类注册 Servlet（约 10 行代码）；
+3. 启动应用，打开 **http://localhost:8080/ureport/designer** 🎉
+
+### 方式二：源码编译
 
 ```bash
+# 1. 克隆项目
 git clone https://gitee.com/lg10/ureport-plus.git
 cd ureport-plus
+
+# 2. 依次构建全部模块到本地仓库
+for m in ureportplus-parent ureportplus-core ureportplus-font ureportplus-console ureportplus-all; do
+  mvn -f "$m/pom.xml" clean install -DskipTests
+done
 ```
 
-### 2. 编译安装
-
-```bash
-cd ureportplus-parent
-mvn clean install -DskipTests
-```
-
-### 3. 启动 Demo
-
-```bash
-cd ../../test-app
-mvn spring-boot:run
-```
-
-### 4. 打开浏览器
-
-```
-http://localhost:8080/ureport/designer
-```
-
-> 🔑 Demo 应用内置 H2 数据库（酒店营收示例数据），控制台登录：`admin` / `admin`
+构建完成后，将 `ureportplus-console` 构件按方式一集成到你的应用中即可。
 
 ---
 
@@ -324,254 +330,16 @@ http://localhost:8080/ureport/designer
 
 ---
 
-## 🧮 表达式语言
+## 📚 深入文档
 
-UReportPlus 使用基于 ANTLR4 的自研表达式引擎，语法参考 JavaScript，学习成本低。表达式可在单元格、条件样式、图片源、二维码数据源等多处使用。
+详细参考文档位于 [`docs/`](docs/) 目录：
 
-### 数据类型与运算符
-
-**基本类型**
-
-| 类型 | 示例 | 说明 |
-| :--- | :--- | :--- |
-| 数字 | `1`, `3.14`, `-20`, `1.5e3` | 整数或小数 |
-| 字符串 | `'hello'`, `"世界"` | 单引号或双引号均可 |
-| 布尔 | `true`, `false` | — |
-
-**运算符**
-
-| 运算符 | 示例 | 结果 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `+` | `21 + 31` | `52` | 数字相加 |
-| `+` | `"值:" + 331` | `"值:331"` | 字符串拼接 |
-| `-` | `21 - 31` | `-10` | 数字相减 |
-| `*` | `3 * 6` | `18` | 数字相乘 |
-| `/` | `6 / 3` | `2` | 除法（最多 8 位小数） |
-| `%` | `5 % 3` | `2` | 取余数 |
-
-**比较与逻辑**：`>` `>=` `<` `<=` `==` `!=` · `and` `or` `not`
-
-### 单元格引用
-
-引用的计算是**相对于当前单元格**进行的——这是中式报表引擎的核心特性。
-
-| 写法 | 含义 | 示例 |
-| :--- | :--- | :--- |
-| `A1` | 相对引用，沿父子依赖树定位 | `A1 * 0.13` |
-| `&A1` | 绝对引用，始终指向 A1 | `&A1` |
-| `$A1` | 行相对、列绝对 | `$A1 + B1` |
-
-```javascript
-// 每行明细计算税额
-B1 * 0.13
-
-// 汇总子格
-sum(C1)
-```
-
-### 条件判断
-
-#### 三元表达式
-
-```javascript
-A1 > 1000 ? "正常" : "偏低"
-A1 > 1000 and A1 < 20000 ? "适中" : "调整:" + (A1 + 100)
-```
-
-#### If / Else If / Else
-
-```javascript
-if (A1 > 10000) {
-    return "优秀"
-} else if (A1 > 5000) {
-    return "良好"
-} else {
-    return "待改进"
-}
-```
-
-> `return` 关键字和结尾 `;` 均非强制。
-
-#### Case 表达式
-
-```javascript
-case {
-    A1 == 100  return "精确匹配",
-    A1 > 100 && A1 < 1000  return "正常范围",
-    A1 >= 1000  return "超出范围"
-}
-```
-
-### 变量赋值与返回
-
-```javascript
-var total = ds.sum(revenue);
-var tax = total * 0.13;
-return total - tax;
-```
-
----
-
-## 📚 内置函数库
-
-### 数据集聚合函数
-
-| 函数 | 语法 | 说明 |
-| :--- | :--- | :--- |
-| `sum` | `ds.sum(字段)` | 求和 |
-| `avg` | `ds.avg(字段)` | 平均值 |
-| `count` | `ds.count(字段)` | 行数统计 |
-| `max` | `ds.max(字段)` | 最大值 |
-| `min` | `ds.min(字段)` | 最小值 |
-| `list` | `ds.list(字段)` | 逗号分隔列表 |
-| `order` | `ds.order(字段)` | 排序列表 |
-
-### 数学函数
-
-`abs` · `ceil` · `floor` · `round` · `pow` · `sqrt` · `exp` · `log` · `log10` · `sin` · `cos` · `tan` · `random` · `median` · `mode` · `stdevp` · `vara`
-
-### 字符串函数
-
-`length` · `lower` · `upper` · `trim` · `substring` · `replace` · `indexOf`
-
-### 日期函数
-
-`date` · `day` · `month` · `year` · `week` · `formatDate`
-
-### 分页函数
-
-`page()` · `pages()` · `pageSum(字段)` · `pageAvg(字段)` · `pageMax(字段)` · `pageMin(字段)` · `pageCount(字段)` · `pageRows()`
-
-### 其他工具函数
-
-| 函数 | 说明 | 示例 |
-| :--- | :--- | :--- |
-| `row()` / `column()` | 当前行号/列号 | — |
-| `param(name)` | URL 查询参数 | `param("hotelId")` |
-| `param(name, 默认值)` | 带默认值的参数 | `param("year", "2025")` |
-| `json(path)` | 解析 JSON | `json("data.items[0].name")` |
-| `formatNumber(n, f)` | 数字格式化 | `formatNumber(12345.6, "#,##0.00")` |
-| `get(cell, idx)` | 获取格第 N 个值 | `get(C1, 0)` |
-
-### 中文金额函数
-
-```javascript
-chn(12345.67)       // → "壹万贰仟叁佰肆拾伍元陆角柒分"
-chnMoney(12345.67)  // → "壹万贰仟叁佰肆拾伍元陆角柒分"
-```
-
----
-
-## 📄 报表 XML 格式
-
-所有报表以 `.ureportplus.xml` 扩展名保存。以下是一个完整示例：
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<ureportplus xmlns="http://www.example.org/ureportplus"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-
-    <!-- 数据源 -->
-    <datasource name="demo" type="jdbc"
-        driver="org.h2.Driver"
-        url="jdbc:h2:mem:ureportplus_demo"
-        username="sa" password=""/>
-
-    <!-- 数据集 -->
-    <dataset name="ds" type="sql" datasource="demo">
-        <sql><![CDATA[
-            SELECT hotel_name, room_type, revenue
-            FROM hotel_revenue ORDER BY hotel_name
-        ]]></sql>
-    </dataset>
-
-    <!-- 行列定义 -->
-    <row row-number="1" height="30"/>
-    <row row-number="2" height="25"/>
-    <column col-number="1" width="120"/>
-    <column col-number="2" width="100"/>
-
-    <!-- A1: 静态表头 -->
-    <cell row="1" col="1">
-        <value>酒店名称</value>
-        <cell-style font-size="14" bold="true"
-            align="center" bgcolor="#f0f0f0"/>
-    </cell>
-
-    <!-- A2: 绑定数据集 -->
-    <cell row="2" col="1">
-        <dataset-value ds-name="ds" property="hotel_name"/>
-    </cell>
-
-    <!-- B1: 静态表头 -->
-    <cell row="1" col="2">
-        <value>营收金额</value>
-        <cell-style font-size="14" bold="true"
-            align="center" bgcolor="#f0f0f0"/>
-    </cell>
-
-    <!-- B2: 表达式计算 -->
-    <cell row="2" col="2">
-        <expression>ds.sum(revenue)</expression>
-    </cell>
-
-    <!-- 纸张设置 -->
-    <paper type="A4" orientation="portrait"
-        top-margin="20" bottom-margin="20"
-        left-margin="20" right-margin="20"/>
-
-</ureportplus>
-```
-
-### 单元格核心属性
-
-| 属性 | 可选值 | 说明 |
-| :--- | :--- | :--- |
-| `type` | `text` / `expression` / `dataset` | 单元格内容类型 |
-| `expand` | `none` / `down` / `right` | 数据展开方向 |
-| `left-parent-cell` | 格名称 | 左侧父格（纵向分组） |
-| `top-parent-cell` | 格名称 | 上方父格（横向分组） |
-| `link-url` | URL 表达式 | 超链接地址 |
-| `condition` | 条件表达式 | 动态条件样式 |
-| `format` | 格式串 | `#,##0.00` 等 |
-
----
-
-## 🌐 URL 接口参考
-
-所有 URL 前缀固定为 `/ureport`。
-
-### 设计 & 预览
-
-| URL | 说明 |
+| 主题 | 文档 |
 | :--- | :--- |
-| `/ureport/` | 📋 报表管理中心（列表、搜索、统计面板） |
-| `/ureport/designer` | 🎨 可视化设计器（新建） |
-| `/ureport/designer?_u=file:xxx.ureportplus.xml` | ✏️ 打开编辑已有报表 |
-| `/ureport/preview?_u=file:xxx.ureportplus.xml` | 👁️ HTML 在线预览 |
-| `/ureport/searchForm` | 🔍 查询表单设计器 |
-
-### 格式导出
-
-| URL | 说明 |
-| :--- | :--- |
-| `/ureport/pdf?_u=file:xxx.ureportplus.xml` | 📕 导出 PDF |
-| `/ureport/excel?_u=file:xxx.ureportplus.xml` | 📗 导出 Excel (.xlsx) |
-| `/ureport/excel97?_u=file:xxx.ureportplus.xml` | 📗 导出 Excel 97-2003 (.xls) |
-| `/ureport/word?_u=file:xxx.ureportplus.xml` | 📘 导出 Word (.docx) |
-
-### 其他
-
-| URL | 方法 | 说明 |
-| :--- | :--- | :--- |
-| `/ureport/datasource` | POST | 数据源管理 |
-| `/ureport/chart` | POST | 图表渲染 |
-| `/ureport/image` | POST | 图片资源加载 |
-| `/ureport/import` | POST | 导入 Excel 模板 |
-| `/ureport/version` | GET | 版本信息 (JSON) |
-| `/ureport/ai/*` | POST | AI 助手 |
-
-> **`_u` 参数**：`file:xxx.ureportplus.xml`（文件系统）或 `classpath:xxx.ureportplus.xml`（类路径）
+| 🧮 表达式语言：语法、单元格引用、条件判断与 40+ 内置函数 | [EXPRESSION-LANGUAGE.md](docs/EXPRESSION-LANGUAGE.md) |
+| 📄 报表 XML 格式：完整 `.ureportplus.xml` 示例与单元格属性 | [REPORT-XML.md](docs/REPORT-XML.md) |
+| 🌐 URL 接口参考：设计器、预览、导出与 API 端点 | [URL-REFERENCE.md](docs/URL-REFERENCE.md) |
+| 🏗 系统架构与技术栈：模块结构、报表生命周期、依赖清单 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
 ---
 
@@ -642,116 +410,9 @@ public interface ReportAuthCheck {
 
 ---
 
-## 🏗 系统架构
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                          BROWSER 浏览器                          │
-│  ┌────────────┐  ┌────────────┐  ┌──────────────────────────┐   │
-│  │ Designer   │  │  Preview   │  │  Console 管理中心         │   │
-│  │ 设计器     │  │  预览器    │  │ 报表列表·搜索·统计·示例   │   │
-│  └─────┬──────┘  └─────┬──────┘  └────────────┬─────────────┘   │
-└────────┼───────────────┼──────────────────────┼──────────────────┘
-         │   HTTP/JSON   │                      │
-┌────────▼───────────────▼──────────────────────▼──────────────────┐
-│              UReportPlusServlet (单入口 /ureport/*)               │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────┐  │
-│  │Designer  │ │ Preview  │ │ Export   │ │DataSource│ │Auth  │  │
-│  │Action    │ │ Action   │ │ Action   │ │ Action   │ │Action│  │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └──┬───┘  │
-└───────┼────────────┼────────────┼────────────┼──────────┼──────┘
-        │            │            │            │           │
-┌───────▼────────────▼────────────▼────────────▼───────────▼──────┐
-│                       CORE ENGINE 核心引擎                       │
-│  ┌──────────────┐   ┌─────────────────┐   ┌─────────────────┐  │
-│  │ ReportParser │──▶│  ReportBuilder  │──▶│ ExportManager   │  │
-│  │ (dom4j)      │   │  (Cell Expand)  │   │ (Producer SPI)  │  │
-│  └──────────────┘   └───────┬─────────┘   └───────┬─────────┘  │
-│              ┌──────────────▼──────────────┐       │             │
-│              │    Expression Engine        │       │             │
-│              │  ANTLR4 → AST → Eval       │       │             │
-│              └─────────────────────────────┘       │             │
-└────────────────────────────────────────────────────┼─────────────┘
-                            ┌────────────────────────▼──────────┐
-                            │  HTML · PDF · Excel · Word        │
-                            └───────────────────────────────────┘
-```
-
-**报表生命周期**：XML 解析 → 父格展开 → 表达式计算 → 格式导出
-
----
-
-## 🛠 技术栈
-
-| 依赖 | 版本 | 用途 |
-| :--- | :--- | :--- |
-| ANTLR4 | 4.9.3 | 表达式语法解析 |
-| dom4j | 1.6.1 | 报表 XML 解析 |
-| Spring | 4.3.11 | DI / JDBC / Web |
-| iText | 5.5.13 | PDF 导出 |
-| Apache POI | 3.16 | Excel + Word 导出 |
-| ZXing | 3.3.1 | 条码/二维码 |
-| Velocity | 1.7 | HTML 模板 |
-| Handsontable | 7.4.2 | 电子表格编辑器 |
-| CodeMirror | 5.58.2 | 表达式编辑器 |
-| Chart.js | 2.9.4 | 图表渲染 |
-| Bootstrap | 3.3.7 | UI 框架 |
-
----
-
 ## 📋 版本历史
 
-### v1.0.6 (2026-08-27)
-
-- 🚀 **Maven Central 正式发布**：`release.sh` 一键完成构建、签名、合并上传与自动发布
-- 📦 **发布流程完善**：GPG 签名、源码/文档 JAR、Central Portal 状态轮询
-
-### v1.0.5 (2026-08-27)
-
-- 🎨 **属性面板全新设计**
-- 📤 **导出功能增强**
-- 🗄️ **数据源功能增强**
-- ⚠️ 本版本未发布到 Maven Central，请直接使用 v1.0.6
-
-### v1.0.4 (2026-07-31)
-
-- 🐛 修复 H2 内置示例数据源未注册问题
-- 🐛 修复导出异常时 PDF 文件损坏
-- 🐛 修复 Excel 导出时合并单元格区域产生空单元格
-- 🐛 报表文件列表自动跳过目录
-
-### v1.0.3 (2026-07-30)
-
-- 🤖 **AI 流式多智能体**：实时阶段反馈，告别假进度条
-- 💬 多智能体会话记忆与历史、推理内容智能提取
-- 🎨 属性面板商业化 UI 改版、可拖拽 AI 悬浮球
-- ⌨️ Ctrl+S / Cmd+S 快捷保存 + 工具栏保存状态指示
-
-### v1.0.1 (2026-07-30)
-
-- 🐛 修复 AI 对话消息重复显示
-- 💬 AI 会话记忆与会话持久化
-- 🤖 AI 支持表格结构操作（插入/删除行列、合并、分片）
-- 📚 AI 学习内置示例报表模式
-
-### v1.0.0 (2026-07-28)
-
-- 🎉 **品牌升级**：UReport2 全面升级为 UReportPlus
-- 🎨 **全新控制台 UI**：现代化 SaaS 风格、Indigo 配色、毛玻璃导航栏
-- 📊 **统计面板**：报表数、示例数、存储源、版本
-- 🔍 **实时搜索**：按报表名称过滤
-- 🕐 **时间显示**：创建时间和更新时间
-- 📦 **Maven Central 发布支持**
-- 📖 **完整中英文文档**
-
-<details>
-<summary>📜 UReport2 历史版本</summary>
-
-- v2.7.2 — 示例报表打包进 JAR，启动自动拷贝
-- v2.7.1 — UI 美化、内联编辑、分组小计/合计、AI 助手、控制台登录、11 个示例
-- v2.6.4 — 核心功能：设计器、导出、表达式引擎、图表
-
-</details>
+最新版本：**v1.0.7** (2026-08-29) —— 完整发布记录见 [VERSION_HISTORY-zh_CN.md](VERSION_HISTORY-zh_CN.md)。
 
 ---
 
@@ -802,10 +463,14 @@ ureportplus.disableDesigner=true
 | 文档 | 链接 |
 | :--- | :--- |
 | 📖 English README | [README.md](README.md) |
-| 💾 存储与数据源 | [STORAGE-DATASOURCE.md](docs/STORAGE-DATASOURCE.md) |
-| 🧮 报表计算模型 | [REPORT-MODEL.md](docs/REPORT-MODEL.md) |
-| 🔤 表达式大全 | [EXPRESSION.md](docs/EXPRESSION.md) |
-| 📝 更新日志 | [CHANGELOG.md](CHANGELOG.md) |
+| 📋 版本历史 | [VERSION_HISTORY-zh_CN.md](VERSION_HISTORY-zh_CN.md) |
+| 🧮 表达式语言与内置函数 | [docs/EXPRESSION-LANGUAGE.md](docs/EXPRESSION-LANGUAGE.md) |
+| 📄 报表 XML 格式 | [docs/REPORT-XML.md](docs/REPORT-XML.md) |
+| 🌐 URL 接口参考 | [docs/URL-REFERENCE.md](docs/URL-REFERENCE.md) |
+| 🏗 系统架构与技术栈 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| 💾 存储与数据源配置 | [docs/STORAGE-DATASOURCE.md](docs/STORAGE-DATASOURCE.md) |
+| 🧮 报表计算模型 | [docs/REPORT-MODEL.md](docs/REPORT-MODEL.md) |
+| 📝 UReport2 2.x 更新日志（2017 年存档） | [CHANGELOG.md](CHANGELOG.md) |
 
 ---
 

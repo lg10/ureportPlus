@@ -119,7 +119,33 @@ if ! $SKIP_BUILD && [ "$VERSION" != "$CURRENT_VERSION" ]; then
   done
   REMAIN=$(grep -rl "<version>${CURRENT_VERSION}</version>" "${POMS[@]/#/$SCRIPT_DIR/}" 2>/dev/null || true)
   [ -z "$REMAIN" ] || fail "以下文件仍残留旧版本号：$REMAIN"
+  VER_PROPS="$SCRIPT_DIR/ureportplus-core/src/main/resources/ureportplus-version.properties"
+  if [ -f "$VER_PROPS" ]; then
+    sed -i '' -e "s|^ureportplus.version=.*|ureportplus.version=${VERSION}|" "$VER_PROPS"
+  fi
   log "版本号修改完成"
+
+  log "同步 README 文档中的版本号..."
+  for doc in README.md README-zh_CN.md; do
+    [ -f "$SCRIPT_DIR/$doc" ] || continue
+    DOC_FILE="$SCRIPT_DIR/$doc" NEW_VER="$VERSION" REL_DATE="$(date +%F)" python3 <<'EOF' || fail "$doc 版本号同步失败"
+import re, os
+path, ver, day = os.environ['DOC_FILE'], os.environ['NEW_VER'], os.environ['REL_DATE']
+s = open(path, encoding='utf-8').read()
+s, n1 = re.subn(r'(<artifactId>ureportplus-(?:console|all)</artifactId>\s*<version>)[^<]+(</version>)',
+                lambda m: m.group(1) + ver + m.group(2), s)
+s, n2 = re.subn(r'(com\.kingint\.ureportplus:ureportplus-console:)[0-9][\w.\-]*',
+                lambda m: m.group(1) + ver, s)
+s, n3 = re.subn(r'((?:Latest release:|最新版本：)\s*\*\*v)[^*]+(\*\*\s*\()[0-9-]+(\))',
+                lambda m: m.group(1) + ver + m.group(2) + day + m.group(3), s)
+if n1 < 2 or n2 < 1 or n3 < 1:
+    raise SystemExit(f'替换数量异常（maven={n1}, gradle={n2}, latest={n3}），文档结构可能已变化，请人工检查')
+open(path, 'w', encoding='utf-8').write(s)
+EOF
+  done
+  DOC_REMAIN=$(grep -l "<version>${CURRENT_VERSION}</version>" "$SCRIPT_DIR/README.md" "$SCRIPT_DIR/README-zh_CN.md" 2>/dev/null || true)
+  [ -z "$DOC_REMAIN" ] || fail "以下文档仍残留旧版本号：$DOC_REMAIN"
+  log "README 版本号同步完成"
 fi
 
 # ---------- 第二步：逐模块构建并生成本地 bundle（不上传） ----------
