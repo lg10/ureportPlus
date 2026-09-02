@@ -4,7 +4,9 @@
 
 /* ---- Handsontable Grid Skin ---- */
 .handsontable tr { background: transparent; }
-.handsontable td, .handsontable th { background: transparent; }
+/* 报表数据单元格默认白底；用户设置的单元格背景色（内联样式）和选中高亮（!important）会覆盖它 */
+.handsontable td { background: var(--color-bg); }
+.handsontable th { background: transparent; }
 .handsontable table.htCore {
   border-collapse: collapse;
   border: 1px solid var(--color-border);
