@@ -15,6 +15,7 @@
  ******************************************************************************/
 package com.kingint.ureportplus.console.pdf;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
@@ -26,10 +27,18 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 
+import com.itextpdf.text.Document;
+import com.itextpdf.text.RectangleReadOnly;
+import com.itextpdf.text.pdf.PdfContentByte;
+import com.itextpdf.text.pdf.PdfImportedPage;
+import com.itextpdf.text.pdf.PdfReader;
+import com.itextpdf.text.pdf.PdfWriter;
 import com.kingint.ureportplus.build.ReportBuilder;
 import com.kingint.ureportplus.console.BaseServletAction;
 import com.kingint.ureportplus.console.cache.TempObjectCache;
 import com.kingint.ureportplus.console.exception.ReportDesignException;
+import com.kingint.ureportplus.definition.Orientation;
+import com.kingint.ureportplus.definition.PagingMode;
 import com.kingint.ureportplus.definition.Paper;
 import com.kingint.ureportplus.definition.ReportDefinition;
 import com.kingint.ureportplus.exception.ReportComputeException;
@@ -69,6 +78,7 @@ public class ExportPdfServletAction extends BaseServletAction{
 		if(StringUtils.isBlank(file)){
 			throw new ReportComputeException("Report file can not be null.");
 		}
+		float customWidth=parseCustomWidth(req);
 		OutputStream outputStream=null;
 		try {
 			String fileName=req.getParameter("_n");
@@ -90,18 +100,86 @@ public class ExportPdfServletAction extends BaseServletAction{
 				}
 				checkAuth(reportDefinition, req);
 				Report report=reportBuilder.buildReport(reportDefinition, parameters);
-				pdfProducer.produce(report, outputStream);
+				float scale=buildReceiptScale(report.getPaper(),customWidth);
+				if(scale>0){
+					produceScaledPdf(report,scale,outputStream);
+				}else{
+					pdfProducer.produce(report, outputStream);
+				}
 			}else{
 				ReportDefinition reportDef=reportRender.getReportDefinition(file);
 				checkAuth(reportDef, req);
-				ExportConfigure configure=new ExportConfigureImpl(file,parameters,outputStream);
-				exportManager.exportPdf(configure);
-			}			
+				float scale=buildReceiptScale(reportDef.getPaper(),customWidth);
+				if(scale>0){
+					Report report=reportRender.render(reportDef, parameters);
+					produceScaledPdf(report,scale,outputStream);
+				}else{
+					ExportConfigure configure=new ExportConfigureImpl(file,parameters,outputStream);
+					exportManager.exportPdf(configure);
+				}
+			}
 		}catch(Exception ex) {
 			throw new ReportException(ex);
-		}finally {			
+		}finally {
 			outputStream.flush();
 			outputStream.close();
+		}
+	}
+
+	private float parseCustomWidth(HttpServletRequest req){
+		String w=req.getParameter("_w");
+		if(StringUtils.isBlank(w)){
+			return 0;
+		}
+		try{
+			float v=Float.parseFloat(w.trim());
+			return v>0 ? v : 0;
+		}catch(NumberFormatException e){
+			return 0;
+		}
+	}
+
+	// 小票模式 _w：目标宽度(mm)/纸张宽度(mm) 的等比缩放系数，非小票模式返回0
+	private float buildReceiptScale(Paper paper,float customWidth){
+		if(customWidth<=0 || paper==null){
+			return 0;
+		}
+		if(paper.getPagingMode()!=PagingMode.receipt){
+			return 0;
+		}
+		int width=paper.getWidth();
+		if(paper.getOrientation()!=null && paper.getOrientation().equals(Orientation.landscape)){
+			width=paper.getHeight();
+		}
+		int paperWidthMm=Math.round(width*100f/283f);
+		if(paperWidthMm<=0){
+			return 0;
+		}
+		return customWidth/paperWidthMm;
+	}
+
+	private void produceScaledPdf(Report report,float scale,OutputStream outputStream) throws Exception{
+		ByteArrayOutputStream buffer=new ByteArrayOutputStream();
+		pdfProducer.produce(report, buffer);
+		PdfReader reader=new PdfReader(buffer.toByteArray());
+		try{
+			com.itextpdf.text.Rectangle first=reader.getPageSizeWithRotation(1);
+			Document document=new Document(new RectangleReadOnly(first.getWidth()*scale,first.getHeight()*scale));
+			PdfWriter writer=PdfWriter.getInstance(document,outputStream);
+			document.open();
+			PdfContentByte cb=writer.getDirectContent();
+			for(int i=1;i<=reader.getNumberOfPages();i++){
+				com.itextpdf.text.Rectangle box=reader.getPageSizeWithRotation(i);
+				if(i>1){
+					document.setPageSize(new RectangleReadOnly(box.getWidth()*scale,box.getHeight()*scale));
+					document.newPage();
+				}
+				PdfImportedPage page=writer.getImportedPage(reader,i);
+				cb.addTemplate(page,scale,0,0,scale,0,0);
+			}
+			document.close();
+		}finally{
+			reader.close();
 		}
 	}
 	

@@ -22,6 +22,12 @@
     #set($pageSizeCss = "${pw}mm auto")
     #set($sheetLabel = "小票模式")
     #end
+    #set($scaleK = 1)
+    #if($customWidth)
+    #set($scaleK = $receiptScale)
+    #set($pageSizeCss = "${customWidth}mm auto")
+    #set($sheetLabel = "小票 ${customWidth}mm")
+    #end
 
     body { background-color:#e9ecef!important; margin:0!important; padding:0!important; }
 
@@ -46,6 +52,12 @@
     .report-page-sheet table { table-layout:fixed!important; border-collapse:collapse; margin:0 auto!important; box-sizing:border-box; }
     .report-page-sheet th, .report-page-sheet td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; box-sizing:border-box; }
     .report-page-sheet tr { page-break-inside:avoid; break-inside:avoid; }
+
+    /* 小票 _w 等比缩放：整张纸（内容+边距）按比例放大 */
+    #if($scaleK != 1)
+    .report-page-sheet { zoom:$scaleK; }
+    .report-searchform { zoom:$scaleK; }
+    #end
 
     /* 工具栏 — 固定在顶部 */
     .report-toolbar {
@@ -74,11 +86,19 @@
     }
 
     @media print {
+        #if($scaleK != 1)
+        @page { size:${pageSizeCss}; margin:0; }
+        #else
         @page { size:${pageSizeCss}; margin-top:${mt}mm; margin-bottom:${mb}mm; margin-left:${ml}mm; margin-right:${mr}mm; }
+        #end
         body { background:#fff!important; padding:0!important; margin:0!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
         .page-viewport { padding:0!important; }
         .report-wrapper { width:100%!important; }
+        #if($scaleK != 1)
+        .report-page-sheet { width:${pw}mm!important; min-height:0!important; height:auto!important; box-shadow:none!important; border:none!important; padding:${mt}mm ${mr}mm ${mb}mm ${ml}mm!important; margin:0!important; overflow:visible!important; position:static!important; zoom:$scaleK; page-break-after:always!important; page-break-inside:avoid!important; break-after:always!important; break-inside:avoid!important; }
+        #else
         .report-page-sheet { width:auto!important; min-height:0!important; height:auto!important; box-shadow:none!important; border:none!important; padding:0!important; margin:0!important; overflow:visible!important; position:static!important; page-break-after:always!important; page-break-inside:avoid!important; break-after:always!important; break-inside:avoid!important; }
+        #end
         .report-page-sheet:last-child { page-break-after:auto!important; break-after:auto!important; }
         .report-page-sheet::after { content:none!important; }
         .report-toolbar,.report-searchform,.report-hf,iframe { display:none!important; }

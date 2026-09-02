@@ -42,11 +42,24 @@ $(document).ready(function(){
             let styles='<style type="text/css">';
             styles+='body{background:#fff!important;margin:0!important;padding:0!important}';
             styles+='@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}';
-            styles+=buildPrintStyle(paper,{});
+            const receiptScale=buildReceiptScale(paper);
+            if(receiptScale){
+                styles+=`@page{size:${receiptScale.customWidth}mm auto;margin:0}`;
+                styles+=`.report-page-sheet{width:${pointToMM(paper.width)}mm!important;min-height:0!important;height:auto!important;`;
+                styles+=`padding:${pointToMM(paper.topMargin)}mm ${pointToMM(paper.rightMargin)}mm ${pointToMM(paper.bottomMargin)}mm ${pointToMM(paper.leftMargin)}mm!important;`;
+                styles+=`box-sizing:border-box!important;zoom:${receiptScale.scale};page-break-after:always!important;page-break-inside:avoid!important}`;
+                styles+=`.report-page-sheet:last-child{page-break-after:auto!important}`;
+            }else{
+                styles+=buildPrintStyle(paper,{});
+            }
             const cellStyleEl=document.getElementById('_ureportplus_table_style');
             if(cellStyleEl) styles+=cellStyleEl.textContent||cellStyleEl.innerHTML||'';
             styles+='table{table-layout:fixed!important;border-collapse:collapse;margin:0 auto!important;box-sizing:border-box}th,td{box-sizing:border-box}tr{page-break-inside:avoid;break-inside:avoid}';
-            styles+='.report-page-sheet{width:auto!important;min-height:0!important;height:auto!important;box-shadow:none!important;border:none!important;margin:0!important;padding:0!important;page-break-after:always!important;page-break-inside:avoid!important}.report-page-sheet:last-child{page-break-after:auto!important}.report-wrapper{width:100%!important;padding:0!important;margin:0!important}.page-viewport{padding:0!important}';
+            if(receiptScale){
+                styles+='.report-page-sheet{box-shadow:none!important;border:none!important;margin:0!important}.report-wrapper{width:100%!important;padding:0!important;margin:0!important}.page-viewport{padding:0!important}';
+            }else{
+                styles+='.report-page-sheet{width:auto!important;min-height:0!important;height:auto!important;box-shadow:none!important;border:none!important;margin:0!important;padding:0!important;page-break-after:always!important;page-break-inside:avoid!important}.report-page-sheet:last-child{page-break-after:auto!important}.report-wrapper{width:100%!important;padding:0!important;margin:0!important}.page-viewport{padding:0!important}';
+            }
             styles+='</style>';
             iFrame.document.head.innerHTML=styles;
             iFrame.document.body.innerHTML=content[0].outerHTML;
@@ -183,6 +196,29 @@ function buildPrintStyle(paper, hf){
         }
     `;
     return style;
+};
+
+// 小票 _w 等比缩放：读取URL中的_w(mm)，仅小票模式生效
+function buildReceiptScale(paper){
+    let w=0;
+    const search=(window.location.search||'').replace(/^\?/,'');
+    for(let item of search.split('&')){
+        if(item.indexOf('_w=')===0){
+            w=parseFloat(item.substring(3));
+        }
+    }
+    if(!w || w<=0 || !paper || paper.pagingMode!=='receipt'){
+        return null;
+    }
+    const paperWidthMm=pointToMM(paper.width);
+    if(paperWidthMm<=0){
+        return null;
+    }
+    const scale=w/paperWidthMm;
+    if(Math.abs(scale-1)<0.001){
+        return null;
+    }
+    return {scale,customWidth:w};
 };
 
 window.buildPaging=function(pageIndex,totalPage){

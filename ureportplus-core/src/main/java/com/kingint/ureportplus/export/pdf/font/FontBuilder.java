@@ -54,6 +54,10 @@ public class FontBuilder implements ApplicationContextAware{
 		}else{
 			font=FontFactory.getFont(fontName);
 		}
+		if(fontSize<=0){
+			// 未设置字号的单元格默认 0，iText 不接受，按浏览器默认 16px≈12pt 处理
+			fontSize=12;
+		}
 		font.setSize(fontSize);
 		int fontStyle=Font.NORMAL;
 		if(fontBold && fontItalic && underLine){

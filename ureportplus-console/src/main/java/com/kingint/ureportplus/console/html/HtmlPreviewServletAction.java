@@ -171,6 +171,20 @@ public class HtmlPreviewServletAction extends RenderPageServletAction {
 			context.put("headerHtml", "");
 			context.put("footerHtml", "");
 		}
+		// 小票模式 _w 参数：目标显示宽度(mm)，按纸张宽度等比缩放
+		String customWidthParam=req.getParameter("_w");
+		if(StringUtils.isNotBlank(customWidthParam) && Boolean.TRUE.equals(context.get("receipt"))){
+			try{
+				float customWidth=Float.parseFloat(customWidthParam.trim());
+				Object paperWidthObj=context.get("paperWidth");
+				int paperWidthMm=paperWidthObj instanceof Number ? ((Number)paperWidthObj).intValue() : 0;
+				if(customWidth>0 && paperWidthMm>0){
+					context.put("customWidth", customWidthParam.trim());
+					context.put("receiptScale", customWidth/paperWidthMm);
+				}
+			}catch(NumberFormatException ignored){
+			}
+		}
 		context.put("contextPath", req.getContextPath());
 			resp.setContentType("text/html");
 			resp.setCharacterEncoding("utf-8");
