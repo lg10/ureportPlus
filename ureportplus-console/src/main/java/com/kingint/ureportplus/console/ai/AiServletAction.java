@@ -157,6 +157,7 @@ public class AiServletAction extends RenderPageServletAction {
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void start(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		AiConversationService conv = null;
 		try {
 			AiConfig config = AiConfig.getInstance();
 			if (!config.isEnabled()) {
@@ -194,7 +195,7 @@ public class AiServletAction extends RenderPageServletAction {
 			resp.setHeader("X-Content-Type-Options", "nosniff");
 			java.io.PrintWriter streamWriter = resp.getWriter();
 
-			AiConversationService conv = new AiConversationService(reportDef);
+			conv = new AiConversationService(reportDef);
 			conv.setStreamOutput(streamWriter);
 			conv.syncClientHistory(clientHistory);
 
@@ -209,12 +210,16 @@ public class AiServletAction extends RenderPageServletAction {
 
 			Map<String, Object> done = buildTurnResponse(result, convId);
 		done.put("type", "done");
-			resp.getWriter().write(mapper.writeValueAsString(done) + "\n");
-		resp.getWriter().flush();
+			streamWriter.write(mapper.writeValueAsString(done) + "\n");
+		streamWriter.flush();
 		} catch (Exception e) {
 			Map<String, Object> error = new HashMap<String, Object>();
 			error.put("type","error"); error.put("error", "Conversation error: " + e.getMessage());
-			writeObjectToJson(resp, error);
+			writeStreamingError(resp, error);
+		} finally {
+			if (conv != null) {
+				conv.setStreamOutput(null);
+			}
 		}
 	}
 
@@ -224,6 +229,8 @@ public class AiServletAction extends RenderPageServletAction {
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void next(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		java.io.PrintWriter streamWriter = null;
+		AiConversationService conv = null;
 		try {
 			String body = readBody(req);
 			Map<String, Object> params = mapper.readValue(body, Map.class);
@@ -234,7 +241,6 @@ public class AiServletAction extends RenderPageServletAction {
 			List<Map<String, Object>> clientHistory = (List<Map<String, Object>>) params.get("history");
 
 			// Find existing session or create new one
-			AiConversationService conv = null;
 			if (convId != null) {
 				ConversationSession session = sessions.get(convId);
 				if (session != null) {
@@ -261,19 +267,49 @@ public class AiServletAction extends RenderPageServletAction {
 				sessions.put(convId, session);
 			}
 
+			// Setup streaming response (charset required, default ISO-8859-1 corrupts Chinese)
+			resp.setContentType("text/plain; charset=UTF-8");
+			resp.setHeader("Cache-Control", "no-cache");
+			resp.setHeader("X-Content-Type-Options", "nosniff");
+			streamWriter = resp.getWriter();
+			// Rebind stream output to the current response; the session may still hold
+			// a writer from a previous request, which would leak stage events.
+			conv.setStreamOutput(streamWriter);
+
 			// Sync client history
 			conv.syncClientHistory(clientHistory);
 
 			AiConversationService.TurnResult result = conv.processTurn(answer, selectedCells);
 			Map<String, Object> done = buildTurnResponse(result, convId);
 		done.put("type", "done");
-			resp.getWriter().write(mapper.writeValueAsString(done) + "\n");
-		resp.getWriter().flush();
+			streamWriter.write(mapper.writeValueAsString(done) + "\n");
+		streamWriter.flush();
 		} catch (Exception e) {
 			Map<String, Object> error = new HashMap<String, Object>();
-			error.put("error", "Continue error: " + e.getMessage());
-			writeObjectToJson(resp, error);
+			error.put("type","error"); error.put("error", "Continue error: " + e.getMessage());
+			if (streamWriter != null) {
+				try {
+					streamWriter.write(mapper.writeValueAsString(error) + "\n");
+					streamWriter.flush();
+				} catch (Exception ignored) {}
+			} else {
+				writeObjectToJson(resp, error);
+			}
+		} finally {
+			if (conv != null) {
+				conv.setStreamOutput(null);
+			}
 		}
+	}
+
+	/** Write an NDJSON error line through the streaming writer when it is already in use. */
+	private void writeStreamingError(HttpServletResponse resp, Map<String, Object> error) {
+		try {
+			resp.setContentType("text/plain; charset=UTF-8");
+			java.io.PrintWriter writer = resp.getWriter();
+			writer.write(mapper.writeValueAsString(error) + "\n");
+			writer.flush();
+		} catch (Exception ignored) {}
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

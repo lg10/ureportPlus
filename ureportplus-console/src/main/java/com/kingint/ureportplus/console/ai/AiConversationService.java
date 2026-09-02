@@ -115,7 +115,9 @@ public class AiConversationService {
 			aiEntry.put("role", "ai");
 			aiEntry.put("content", "达到最大对话轮次，自动生成方案。");
 			history.add(aiEntry);
-			return forceApply();
+			TurnResult forced = forceApply();
+			forced.confidence = 100;
+			return forced;
 		}
 
 		addStage("🧠", "AI 分析需求中…");
@@ -143,12 +145,14 @@ public class AiConversationService {
 			TurnResult tr = TurnResult.question(question, options);
 			tr.understanding = (String) result.get("understanding");
 			tr.stages = new ArrayList<Map<String, String>>(stages);
+			tr.confidence = confidence;
 			return tr;
 		}
 
 		TurnResult tr = forceApply();
 		tr.understanding = (String) result.get("understanding");
 		tr.stages = new ArrayList<Map<String, String>>(stages);
+		tr.confidence = confidence;
 		return tr;
 	}
 
@@ -158,7 +162,15 @@ public class AiConversationService {
 		String genSystemPrompt = new ReportContextBuilder(reportDef).buildSystemPrompt(context);
 		String genResponse = client.chat(genSystemPrompt, userPrompt);
 		AiGenerationService genService = new AiGenerationService(reportDef);
-		List<AiGenerationService.CellModification> modifications = genService.parseModifications(genResponse);
+		List<AiGenerationService.CellModification> modifications;
+		try {
+			modifications = genService.parseModifications(genResponse);
+		} catch (Exception parseEx) {
+			// 生成器偶尔返回非 JSON 数组（推理文本/对象），优雅降级为追问而非抛错
+			log.warn("[AI Turn {}] Generator response not parseable as modification array: {}. Raw: {}",
+				turnCount, parseEx.getMessage(), truncate(genResponse));
+			return TurnResult.question("无法生成有效的修改方案，请尝试更具体的描述。", null);
+		}
 		List<Map<String, Object>> structuralOps = genService.inferStructuralOps(modifications);
 
 		addStage("✅", "方案生成完成",
@@ -266,12 +278,23 @@ public class AiConversationService {
 	private Map<String, Object> parseAnalyzerResponse(String response) {
 		try {
 			String json = extractJson(response);
-			if (json == null) return null;
+			if (json == null) {
+				log.warn("No JSON found in analyzer response. Raw: {}", truncate(response));
+				return null;
+			}
 			return mapper.readValue(json, Map.class);
 		} catch (Exception e) {
-			log.debug("Parse analyzer response failed: {}", e.getMessage());
+			log.warn("Parse analyzer response failed: {}. Raw: {}", e.getMessage(), truncate(response));
 			return null;
 		}
+	}
+
+	private static String truncate(String s) {
+		if (s == null) return "null";
+		if (s.length() <= 800) return s;
+		// 保留首尾：推理模型把 JSON 结论放在末尾，只截头部会丢掉关键信息
+		return s.substring(0, 300) + " ...(省略 " + (s.length() - 600) + " 字)... "
+			+ s.substring(s.length() - 300);
 	}
 
 	/** Extract the last valid JSON object from a response that may contain reasoning text. */
