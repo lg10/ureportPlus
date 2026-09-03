@@ -86,7 +86,7 @@
 <dependency>
     <groupId>com.kingint.ureportplus</groupId>
     <artifactId>ureportplus-console</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
 </dependency>
 ```
 
@@ -95,7 +95,7 @@
 <dependency>
     <groupId>com.kingint.ureportplus</groupId>
     <artifactId>ureportplus-all</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
 </dependency>
 ```
 
@@ -104,7 +104,7 @@
 ### Gradle
 
 ```groovy
-implementation 'com.kingint.ureportplus:ureportplus-console:1.0.7'
+implementation 'com.kingint.ureportplus:ureportplus-console:1.0.8'
 ```
 
 ### Spring Boot Integration (Recommended)
@@ -372,7 +372,7 @@ public interface ReportAuthCheck {
 
 ## 📋 Version History
 
-Latest release: **v1.0.7** (2026-08-29) — full release notes in [VERSION_HISTORY.md](VERSION_HISTORY.md).
+Latest release: **v1.0.8** (2026-09-03) — full release notes in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
 ---
 
