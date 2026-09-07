@@ -151,7 +151,7 @@ public class HtmlProducer{
 						sb.append("<td");
 					}
 				}
-				sb.append(" class='_"+cell.getName()+"' ");
+				sb.append(" class='_"+cell.getName()+wrapComputeClass(cell)+"' ");
 				String style=buildCustomStyle(cell,columns,j);
 				sb.append(" "+style+"");
 				sb.append(">");
@@ -484,5 +484,14 @@ public class HtmlProducer{
 			width+=col.getWidth();
 		}
 		return width;
+	}
+	
+	// 自动行高计算的单元格已由服务端折行，预览页需据此关闭 nowrap+ellipsis，避免浏览器对折行再截断出省略号
+	private String wrapComputeClass(Cell cell){
+		CellStyle cellStyle=cell.getCellStyle();
+		if(cellStyle!=null && Boolean.TRUE.equals(cellStyle.getWrapCompute())){
+			return " ud-wrap";
+		}
+		return "";
 	}
 }

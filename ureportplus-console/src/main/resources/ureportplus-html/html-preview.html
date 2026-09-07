@@ -51,6 +51,8 @@
     /* 表格 */
     .report-page-sheet table { table-layout:fixed!important; border-collapse:collapse; margin:0 auto!important; box-sizing:border-box; }
     .report-page-sheet th, .report-page-sheet td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; box-sizing:border-box; }
+    /* 自动行高计算单元格已由服务端折行，允许按客户端字体自然回行，禁止再截断出省略号 */
+    .report-page-sheet td.ud-wrap { white-space:normal; text-overflow:clip; }
     .report-page-sheet tr { page-break-inside:avoid; break-inside:avoid; }
 
     /* 小票 _w 等比缩放：整张纸（内容+边距）按比例放大 */
